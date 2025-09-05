@@ -1,0 +1,58 @@
+[
+  {
+    "name": "二代-中文",
+    "height": 40,
+    "fontSize": 42.34,
+    "letterSpacing": 150,
+    "desc": ""
+  },
+  {
+    "name": "二代-中+英",
+    "height": 43,
+    "fontSize": 42.34,
+    "letterSpacing": 150,
+    "desc": ""
+  },
+  {
+    "name": "二代-英文",
+    "height": 43,
+    "fontSize": 42.34,
+    "letterSpacing": 150,
+    "desc": ""
+  },
+  {
+    "name": "二代-英文草寫",
+    "height": 56,
+    "fontSize": 42.34,
+    "letterSpacing": 150,
+    "desc": ""
+  },
+  {
+    "name": "一、三代-中文",
+    "height": 44,
+    "fontSize": 42.34,
+    "letterSpacing": 150,
+    "desc": ""
+  },
+  {
+    "name": "一、三代、中+英",
+    "height": 52,
+    "fontSize": 42.34,
+    "letterSpacing": 150,
+    "desc": ""
+  },
+  {
+    "name": "一、三代-英文",
+    "height": 52,
+    "fontSize": 42.34,
+    "letterSpacing": 150,
+    "desc": ""
+  },
+  {
+    "name": "一、三代-英文草寫",
+    "height": 70,
+    "fontSize": 42.34,
+    "letterSpacing": 150,
+    "desc": ""
+  }
+]
