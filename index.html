@@ -331,7 +331,7 @@
                     </div>
                 </div>
                 <div class="info-box">
-                    💡 <strong>提示：</strong>點擊模板套用所有設定。當前使用模板：<span id="currentTemplate">無</span>
+                    💡 <strong>提示：</strong>點擊模板套用所有設定，再次點擊取消選擇。當前使用模板：<span id="currentTemplate">無</span>
                 </div>
             </div>
 
@@ -740,6 +740,15 @@
 
         // 套用模板
         function applyTemplate(template) {
+            // 如果點擊的是當前已選擇的模板，則取消選擇
+            if (currentTemplateName === template.name) {
+                currentTemplateName = null;
+                document.getElementById('currentTemplate').textContent = '無';
+                renderTemplates(); // 更新視覺狀態
+                alert('已取消選擇模板');
+                return;
+            }
+            
             document.getElementById('height').value = template.height;
             document.getElementById('fontSize').value = template.fontSize;
             document.getElementById('letterSpacing').value = template.letterSpacing;
@@ -905,16 +914,23 @@
             
             // 生成檔名
             let filename;
+            const date = new Date();
+            const dateStr = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
+            const timeStr = `${String(date.getHours()).padStart(2,'0')}${String(date.getMinutes()).padStart(2,'0')}`;
+            
+            // 處理文字內容，移除特殊字符用於檔名
+            const safeText = text.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_').substring(0, 15);
+            
             if (currentTemplateName) {
-                // 使用模板名稱
-                filename = `${currentTemplateName}_${Date.now()}.png`;
+                // 使用模板名稱_文字內容_日期時間
+                filename = `${currentTemplateName}_${safeText}_${dateStr}_${timeStr}.png`;
             } else {
-                // 使用參數編寫檔名
+                // 使用文字內容_參數編寫檔名_日期時間
                 const fontSize = document.getElementById('fontSize').value;
                 const letterSpacing = document.getElementById('letterSpacing').value;
                 const height = document.getElementById('height').value;
                 const rotate = document.getElementById('rotate180').checked ? '_R180' : '';
-                filename = `PNG_${fontSize}px_S${letterSpacing}_H${height}${rotate}_${Date.now()}.png`;
+                filename = `${safeText}_${fontSize}px_S${letterSpacing}_H${height}${rotate}_${dateStr}_${timeStr}.png`;
             }
             
             const link = document.createElement('a');
