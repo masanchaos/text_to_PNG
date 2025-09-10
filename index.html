@@ -84,6 +84,11 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
+        .template-card.active {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
         .add-template-card {
             padding: 15px;
             background: #fff;
@@ -145,6 +150,11 @@
             margin-top: 5px;
         }
 
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
         input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
@@ -163,12 +173,12 @@
 
         .modal-content {
             background-color: white;
-            margin: 5% auto;
+            margin: 3% auto;
             padding: 30px;
             border-radius: 15px;
             width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
+            max-width: 600px;
+            max-height: 90vh;
             overflow-y: auto;
         }
 
@@ -190,7 +200,13 @@
             max-width: 100%;
             display: block;
             margin: 20px auto;
-            background: white;
+            background-image: 
+                linear-gradient(45deg, #ccc 25%, transparent 25%),
+                linear-gradient(-45deg, #ccc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #ccc 75%),
+                linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
 
         .char-counter {
@@ -277,13 +293,22 @@
             color: #f57c00;
             margin-top: 15px;
         }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>✨ 文字轉PNG轉換器</h1>
-            <p>自定義模板 • 18字元限制 • 中英文分離字體</p>
+            <p>自定義模板 • 22字元限制 • 透明背景 • 中英分離字體</p>
         </div>
 
         <div class="content">
@@ -305,16 +330,16 @@
                         <div style="color: #667eea; margin-top: 10px;">新增模板</div>
                     </div>
                 </div>
+                <div class="info-box">
+                    💡 <strong>提示：</strong>點擊模板套用所有設定。當前使用模板：<span id="currentTemplate">無</span>
+                </div>
             </div>
 
             <!-- 文字輸入區 -->
             <div class="section">
-                <div class="section-title">輸入文字（最多18字元）</div>
+                <div class="section-title">輸入文字（最多22字元）</div>
                 <textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;">Hello, 世界!</textarea>
-                <div class="char-counter" id="charCounter">10 / 18</div>
-                <div class="info-box">
-                    💡 <strong>提示：</strong>系統會自動識別中英文字符，並套用對應的字體設定。
-                </div>
+                <div class="char-counter" id="charCounter">10 / 22</div>
             </div>
 
             <!-- 字體設定區 -->
@@ -369,9 +394,6 @@
                             </select>
                         </div>
                     </div>
-                    <div class="info-box">
-                        🔤 英文、數字、符號將使用英文字體 | 🈳 中文、日文、韓文將使用中文字體
-                    </div>
                 </div>
             </div>
 
@@ -385,12 +407,25 @@
                     </div>
                     <div>
                         <label>字距 (px)</label>
-                        <input type="number" id="letterSpacing" value="150" min="-10" max="500">
+                        <input type="number" id="letterSpacing" value="15" min="-10" max="500">
                     </div>
                     <div>
                         <label>高度 (px)</label>
                         <input type="number" id="height" value="53" min="20" max="500">
                     </div>
+                    <div>
+                        <label>文字顏色</label>
+                        <input type="color" id="textColor" value="#000000">
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="rotate180">
+                    <label for="rotate180">旋轉180度</label>
+                </div>
+                
+                <div class="info-box">
+                    📌 <strong>輸出說明：</strong>PNG將使用透明背景，預覽中的格子只是顯示透明效果。
                 </div>
             </div>
 
@@ -428,18 +463,63 @@
             </div>
             
             <div style="margin-bottom: 15px;">
-                <label>高度 (px)</label>
-                <input type="number" id="templateHeight" value="53">
+                <label>統一字體（統一模式用）</label>
+                <select id="templateSingleFont">
+                    <option value="'Rage Italic', cursive">Rage Italic</option>
+                    <option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option>
+                    <option value="'Taipei Sans TC Beta', 'Noto Sans TC', sans-serif">Taipei Sans TC Beta</option>
+                    <option value="'Noto Sans CJK TC', 'Noto Sans TC', sans-serif" selected>Noto Sans CJK TC</option>
+                    <option value="Arial, sans-serif">Arial</option>
+                    <option value="'Microsoft JhengHei', '微軟正黑體', sans-serif">微軟正黑體</option>
+                </select>
+            </div>
+            
+            <div class="grid-2" style="margin-bottom: 15px;">
+                <div>
+                    <label>英文字體（分離模式用）</label>
+                    <select id="templateEnglishFont">
+                        <option value="'Rage Italic', cursive">Rage Italic</option>
+                        <option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option>
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                        <option value="'Courier New', monospace">Courier New</option>
+                    </select>
+                </div>
+                <div>
+                    <label>中文字體（分離模式用）</label>
+                    <select id="templateChineseFont">
+                        <option value="'Taipei Sans TC Beta', 'Noto Sans TC', sans-serif">Taipei Sans TC Beta</option>
+                        <option value="'Noto Sans CJK TC', 'Noto Sans TC', sans-serif" selected>Noto Sans CJK TC</option>
+                        <option value="'Microsoft JhengHei', '微軟正黑體', sans-serif">微軟正黑體</option>
+                        <option value="'PMingLiU', '新細明體', serif">新細明體</option>
+                        <option value="'DFKai-SB', '標楷體', serif">標楷體</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid-2" style="margin-bottom: 15px;">
+                <div>
+                    <label>高度 (px)</label>
+                    <input type="number" id="templateHeight" value="53">
+                </div>
+                <div>
+                    <label>字級 (px)</label>
+                    <input type="number" id="templateFontSize" value="42.34" step="0.01">
+                </div>
+                <div>
+                    <label>字距 (px)</label>
+                    <input type="number" id="templateLetterSpacing" value="15">
+                </div>
+                <div>
+                    <label>文字顏色</label>
+                    <input type="color" id="templateTextColor" value="#000000">
+                </div>
             </div>
             
             <div style="margin-bottom: 15px;">
-                <label>字級 (px)</label>
-                <input type="number" id="templateFontSize" value="42.34" step="0.01">
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label>字距 (px)</label>
-                <input type="number" id="templateLetterSpacing" value="150">
+                <input type="checkbox" id="templateRotate">
+                <label for="templateRotate">旋轉180度</label>
             </div>
             
             <div style="margin-bottom: 15px;">
@@ -457,7 +537,8 @@
     <script>
         // 全域變數
         let templates = [];
-        let fontMode = 'single'; // 'single' 或 'dual'
+        let fontMode = 'single';
+        let currentTemplateName = null;
 
         // 初始化
         window.onload = function() {
@@ -473,9 +554,11 @@
             document.getElementById('fontSize').addEventListener('input', updateCanvas);
             document.getElementById('letterSpacing').addEventListener('input', updateCanvas);
             document.getElementById('height').addEventListener('input', updateCanvas);
+            document.getElementById('textColor').addEventListener('input', updateCanvas);
             document.getElementById('fontFamily').addEventListener('change', updateCanvas);
             document.getElementById('englishFont').addEventListener('change', updateCanvas);
             document.getElementById('chineseFont').addEventListener('change', updateCanvas);
+            document.getElementById('rotate180').addEventListener('change', updateCanvas);
         };
 
         // 切換字體模式
@@ -495,9 +578,8 @@
             updateCanvas();
         }
 
-        // 判斷是否為中文字符1
+        // 判斷是否為中文字符
         function isChinese(char) {
-            // 包含中文、日文漢字、韓文
             const code = char.charCodeAt(0);
             return (code >= 0x4E00 && code <= 0x9FFF) || // CJK統一漢字
                    (code >= 0x3400 && code <= 0x4DBF) || // CJK擴展A
@@ -517,20 +599,15 @@
                 // 預設模板
                 templates = [
                     {
-                        name: '標題模板',
-                        height: 80,
-                        fontSize: 60,
-                        letterSpacing: 150,
+                        name: '標準模板',
+                        height: 53,
+                        fontSize: 42.34,
+                        letterSpacing: 15,
                         fontMode: 'single',
-                        desc: '統一字體標題'
-                    },
-                    {
-                        name: '中英混排',
-                        height: 65,
-                        fontSize: 48,
-                        letterSpacing: 120,
-                        fontMode: 'dual',
-                        desc: '中英文分離'
+                        singleFont: "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif",
+                        textColor: '#000000',
+                        rotate: false,
+                        desc: '預設標準模板'
                     }
                 ];
                 saveTemplatesLocal();
@@ -556,14 +633,17 @@
             templates.forEach((template, index) => {
                 const card = document.createElement('div');
                 card.className = 'template-card';
+                if (template.name === currentTemplateName) {
+                    card.classList.add('active');
+                }
                 card.innerHTML = `
                     <button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button>
                     <button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button>
                     <div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div>
                     <div style="font-size: 12px; color: #666;">
-                        高度: ${template.height}px<br>
-                        字級: ${template.fontSize}px<br>
-                        模式: ${template.fontMode === 'dual' ? '中英分離' : '統一字體'}
+                        ${template.fontSize}px | 字距${template.letterSpacing}px<br>
+                        ${template.fontMode === 'dual' ? '中英分離' : '統一字體'}
+                        ${template.rotate ? '<br>旋轉180°' : ''}
                         ${template.desc ? '<br>' + template.desc : ''}
                     </div>
                 `;
@@ -576,11 +656,18 @@
         function openTemplateModal() {
             document.getElementById('templateModal').style.display = 'block';
             document.getElementById('editIndex').value = '-1';
+            
+            // 載入當前設定作為預設值
             document.getElementById('templateName').value = '';
             document.getElementById('templateHeight').value = document.getElementById('height').value;
             document.getElementById('templateFontSize').value = document.getElementById('fontSize').value;
             document.getElementById('templateLetterSpacing').value = document.getElementById('letterSpacing').value;
             document.getElementById('templateFontMode').value = fontMode;
+            document.getElementById('templateSingleFont').value = document.getElementById('fontFamily').value;
+            document.getElementById('templateEnglishFont').value = document.getElementById('englishFont').value;
+            document.getElementById('templateChineseFont').value = document.getElementById('chineseFont').value;
+            document.getElementById('templateTextColor').value = document.getElementById('textColor').value;
+            document.getElementById('templateRotate').checked = document.getElementById('rotate180').checked;
             document.getElementById('templateDesc').value = '';
         }
 
@@ -603,6 +690,11 @@
                 fontSize: parseFloat(document.getElementById('templateFontSize').value),
                 letterSpacing: parseInt(document.getElementById('templateLetterSpacing').value),
                 fontMode: document.getElementById('templateFontMode').value,
+                singleFont: document.getElementById('templateSingleFont').value,
+                englishFont: document.getElementById('templateEnglishFont').value,
+                chineseFont: document.getElementById('templateChineseFont').value,
+                textColor: document.getElementById('templateTextColor').value,
+                rotate: document.getElementById('templateRotate').checked,
                 desc: document.getElementById('templateDesc').value.trim()
             };
 
@@ -629,6 +721,11 @@
             document.getElementById('templateFontSize').value = template.fontSize;
             document.getElementById('templateLetterSpacing').value = template.letterSpacing;
             document.getElementById('templateFontMode').value = template.fontMode || 'single';
+            document.getElementById('templateSingleFont').value = template.singleFont || "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif";
+            document.getElementById('templateEnglishFont').value = template.englishFont || "'Avenir Next Condensed', sans-serif";
+            document.getElementById('templateChineseFont').value = template.chineseFont || "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif";
+            document.getElementById('templateTextColor').value = template.textColor || '#000000';
+            document.getElementById('templateRotate').checked = template.rotate || false;
             document.getElementById('templateDesc').value = template.desc || '';
         }
 
@@ -646,16 +743,22 @@
             document.getElementById('height').value = template.height;
             document.getElementById('fontSize').value = template.fontSize;
             document.getElementById('letterSpacing').value = template.letterSpacing;
+            document.getElementById('textColor').value = template.textColor || '#000000';
+            document.getElementById('rotate180').checked = template.rotate || false;
             
-            // 套用字體模式
+            // 套用字體模式和字體
             if (template.fontMode === 'dual') {
-                switchFontMode('dual');
                 document.querySelectorAll('.font-mode-btn')[1].click();
+                document.getElementById('englishFont').value = template.englishFont || "'Avenir Next Condensed', sans-serif";
+                document.getElementById('chineseFont').value = template.chineseFont || "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif";
             } else {
-                switchFontMode('single');
                 document.querySelectorAll('.font-mode-btn')[0].click();
+                document.getElementById('fontFamily').value = template.singleFont || "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif";
             }
             
+            currentTemplateName = template.name;
+            document.getElementById('currentTemplate').textContent = template.name;
+            renderTemplates(); // 更新視覺狀態
             updateCanvas();
             alert(`已套用模板：${template.name}`);
         }
@@ -702,9 +805,9 @@
             const counter = document.getElementById('charCounter');
             const downloadBtn = document.getElementById('downloadBtn');
             
-            counter.textContent = `${count} / 18`;
+            counter.textContent = `${count} / 22`;
             
-            if (count > 18) {
+            if (count > 22) {
                 counter.className = 'char-counter error';
                 downloadBtn.disabled = true;
             } else {
@@ -722,17 +825,15 @@
             const fontSize = parseFloat(document.getElementById('fontSize').value);
             const letterSpacing = parseInt(document.getElementById('letterSpacing').value);
             const height = parseInt(document.getElementById('height').value);
+            const textColor = document.getElementById('textColor').value;
+            const rotate = document.getElementById('rotate180').checked;
             
             // 取得字體設定
             let singleFont = document.getElementById('fontFamily').value;
             let englishFont = document.getElementById('englishFont').value;
             let chineseFont = document.getElementById('chineseFont').value;
             
-            // 固定白底黑字
-            const bgColor = '#ffffff';
-            const textColor = '#000000';
-            
-            // 計算寬度（需要考慮不同字體）
+            // 計算寬度
             let width = 40; // padding
             
             for (let i = 0; i < text.length; i++) {
@@ -753,18 +854,25 @@
             canvas.width = width;
             canvas.height = height;
             
-            // 繪製背景（白色）
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0, 0, width, height);
+            // 清空畫布（透明背景）
+            ctx.clearRect(0, 0, width, height);
             
-            // 繪製文字（黑色）
+            // 如果需要旋轉
+            if (rotate) {
+                ctx.save();
+                ctx.translate(width/2, height/2);
+                ctx.rotate(Math.PI);
+                ctx.translate(-width/2, -height/2);
+            }
+            
+            // 繪製文字
             ctx.fillStyle = textColor;
             ctx.textBaseline = 'middle';
             
             let x = 20;
             const y = height / 2;
             
-            // 逐字繪製（根據字體模式）
+            // 逐字繪製
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 const font = fontMode === 'dual' 
@@ -776,21 +884,41 @@
                 x += ctx.measureText(char).width + letterSpacing;
             }
             
+            if (rotate) {
+                ctx.restore();
+            }
+            
             // 更新尺寸資訊
-            document.getElementById('sizeInfo').textContent = `尺寸: ${width} × ${height} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'}`;
+            document.getElementById('sizeInfo').textContent = 
+                `尺寸: ${width} × ${height} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
         }
 
         // 下載PNG
         function downloadPNG() {
             const text = document.getElementById('textInput').value;
-            if (text.length > 18) {
-                alert('文字超過18個字元，無法下載！');
+            if (text.length > 22) {
+                alert('文字超過22個字元，無法下載！');
                 return;
             }
             
             const canvas = document.getElementById('canvas');
+            
+            // 生成檔名
+            let filename;
+            if (currentTemplateName) {
+                // 使用模板名稱
+                filename = `${currentTemplateName}_${Date.now()}.png`;
+            } else {
+                // 使用參數編寫檔名
+                const fontSize = document.getElementById('fontSize').value;
+                const letterSpacing = document.getElementById('letterSpacing').value;
+                const height = document.getElementById('height').value;
+                const rotate = document.getElementById('rotate180').checked ? '_R180' : '';
+                filename = `PNG_${fontSize}px_S${letterSpacing}_H${height}${rotate}_${Date.now()}.png`;
+            }
+            
             const link = document.createElement('a');
-            link.download = 'text_' + Date.now() + '.png';
+            link.download = filename;
             link.href = canvas.toDataURL();
             link.click();
         }
@@ -805,4 +933,3 @@
     </script>
 </body>
 </html>
-
