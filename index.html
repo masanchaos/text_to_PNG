@@ -8,23 +8,23 @@
         /* 載入您指定的 .woff2 格式字體 */
         @font-face {
           font-family: 'Rage Italic';
-          src: url('fonts/RageItalic.woff2') format('woff2');
+          src: url('./fonts/RageItalic.woff2') format('woff2');
         }
         @font-face {
           font-family: 'Avenir Next Condensed';
-          src: url('fonts/AvenirNextCondensed.woff2') format('woff2');
+          src: url('./fonts/AvenirNextCondensed.woff2') format('woff2');
         }
         @font-face {
           font-family: 'Taipei Sans TC Beta';
-          src: url('fonts/TaipeiSansTCBeta.woff2') format('woff2');
+          src: url('./fonts/TaipeiSansTCBeta.woff2') format('woff2');
         }
         @font-face {
           font-family: 'Noto Sans CJK TC';
-          src: url('fonts/NotoSansCJKtc.woff2') format('woff2');
+          src: url('./fonts/NotoSansCJKtc.woff2') format('woff2');
         }
         @font-face {
           font-family: '微軟正黑體';
-          src: url('fonts/MicrosoftJhengHei.woff2') format('woff2');
+          src: url('./fonts/MicrosoftJhengHei.woff2') format('woff2');
         }
 
         /* 通用樣式 */
@@ -225,15 +225,11 @@
     <script>
         let templates = []; let fontMode = 'single'; let currentTemplateName = null;
         
-        // --- 功能更新: window.onload 改為 async 以處理非同步載入 ---
         window.onload = async function() {
-            await loadTemplates(); // 等待模板載入完成
-            
-            // 頁面初始化
+            await loadTemplates();
             updateCanvas();
             checkCharCount();
             
-            // 綁定事件監聽
             document.getElementById('textInput').addEventListener('input', () => { checkCharCount(); updateCanvas(); });
             document.getElementById('fontSize').addEventListener('input', updateCanvas);
             document.getElementById('letterSpacing').addEventListener('input', updateCanvas);
@@ -254,7 +250,6 @@
         }
         function isChinese(char) { const code = char.charCodeAt(0); return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF) || (code >= 0x3000 && code <= 0x303F) || (code >= 0xFF00 && code <= 0xFFEF) || (code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF) || (code >= 0xAC00 && code <= 0xD7AF); }
         
-        // --- 功能更新: loadTemplates 現在會非同步載入根目錄的 templates.json ---
         async function loadTemplates() {
             const saved = localStorage.getItem('pngTemplates');
             if (saved) {
@@ -265,7 +260,8 @@
             }
 
             try {
-                const response = await fetch('templates.json'); // 從根目錄獲取
+                // --- 這是關鍵的修改: 使用 './' 相對路徑 ---
+                const response = await fetch('./templates.json');
                 if (response.ok) {
                     const rootTemplates = await response.json();
                     if (Array.isArray(rootTemplates) && rootTemplates.length > 0) {
@@ -275,12 +271,13 @@
                         renderTemplates();
                         return;
                     }
+                } else {
+                    console.log("未在根目錄找到 templates.json，狀態碼:", response.status);
                 }
             } catch (error) {
-                console.log("未在根目錄找到 templates.json 或讀取失敗。");
+                console.log("讀取 templates.json 失敗:", error);
             }
             
-            // 如果以上都失敗，則使用預設模板
             console.log('使用預設模板。');
             templates = [{ name: '標準模板', fontSize: 42.34, letterSpacing: 15, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' }];
             saveTemplatesLocal();
