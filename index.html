@@ -5,303 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文字轉PNG轉換器</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        /* 載入您指定的 .woff2 格式字體 */
+        @font-face {
+          font-family: 'Rage Italic';
+          src: url('fonts/RageItalic.woff2') format('woff2');
+        }
+        @font-face {
+          font-family: 'Avenir Next Condensed';
+          src: url('fonts/AvenirNextCondensed.woff2') format('woff2');
+        }
+        @font-face {
+          font-family: 'Taipei Sans TC Beta';
+          src: url('fonts/TaipeiSansTCBeta.woff2') format('woff2');
+        }
+        @font-face {
+          font-family: 'Noto Sans CJK TC';
+          src: url('fonts/NotoSansCJKtc.woff2') format('woff2');
+        }
+        @font-face {
+          font-family: '微軟正黑體';
+          src: url('fonts/MicrosoftJhengHei.woff2') format('woff2');
+        }
+
+        /* 通用樣式 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans CJK TC', '微軟正黑體', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2em; margin-bottom: 10px; }
+        .content { padding: 30px; }
+        .section { margin-bottom: 30px; padding: 20px; background: #f8f9ff; border-radius: 10px; }
+        .section-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #333; }
+        input, select, textarea { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-top: 5px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s; font-size: 14px; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-secondary { background: white; color: #667eea; border: 2px solid #667eea; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .info-box { padding: 10px; background: #fff8e1; border-radius: 8px; font-size: 13px; color: #f57c00; margin-top: 15px; }
+        .char-counter { text-align: right; font-size: 14px; margin-top: 5px; color: #666; }
+        .char-counter.error { color: #ff5252; font-weight: bold; }
+        .checkbox-group { display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-top: 10px; }
+        input[type="checkbox"] { width: auto; margin-right: 8px; }
+        #canvas { border: 2px solid #e0e0e0; border-radius: 8px; max-width: 100%; display: block; margin: 20px auto; background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+        .font-mode-toggle { display: flex; gap: 10px; margin-bottom: 15px; }
+        .font-mode-btn { flex: 1; padding: 10px; border: 2px solid #e0e0e0; background: white; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .font-mode-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        .font-settings { display: none; }
+        .font-settings.active { display: block; }
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* 模板樣式 */
+        .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 15px; }
+        .template-card { padding: 15px; background: white; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer; text-align: center; transition: all 0.3s; position: relative; min-height: 140px; }
+        .template-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .template-card.active { border-color: #667eea; background: #f0f2ff; }
+        .add-template-card { padding: 15px; background: #fff; border: 2px dashed #667eea; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; }
+        .add-template-card:hover { background: #f0f2ff; border-color: #764ba2; transform: translateY(-2px); }
+        .delete-btn, .edit-btn { position: absolute; top: 5px; width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; display: none; color: white; font-size: 12px; }
+        .delete-btn { right: 5px; background: #ff5252; }
+        .edit-btn { right: 35px; background: #667eea; }
+        .template-card:hover .delete-btn, .template-card:hover .edit-btn { display: block; }
 
-        body {
-            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .section {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f8f9ff;
-            border-radius: 10px;
-        }
-
-        .section-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .template-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .template-card {
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            border: 2px solid #e0e0e0;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-            position: relative;
-            min-height: 140px;
-        }
-
-        .template-card:hover {
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .template-card.active {
-            border-color: #667eea;
-            background: #f0f2ff;
-        }
-
-        .add-template-card {
-            padding: 15px;
-            background: #fff;
-            border: 2px dashed #667eea;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 140px;
-        }
-
-        .add-template-card:hover {
-            background: #f0f2ff;
-            border-color: #764ba2;
-            transform: translateY(-2px);
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        input[type="checkbox"] {
-            width: auto;
-            margin-right: 8px;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 3% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: #000;
-        }
-
-        #canvas {
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            max-width: 100%;
-            display: block;
-            margin: 20px auto;
-            background-image: 
-                linear-gradient(45deg, #ccc 25%, transparent 25%),
-                linear-gradient(-45deg, #ccc 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #ccc 75%),
-                linear-gradient(-45deg, transparent 75%, #ccc 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-        }
-
-        .char-counter {
-            text-align: right;
-            font-size: 14px;
-            margin-top: 5px;
-            color: #666;
-        }
-
-        .char-counter.error {
-            color: #ff5252;
-            font-weight: bold;
-        }
-
-        .delete-btn, .edit-btn {
-            position: absolute;
-            top: 5px;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            display: none;
-            color: white;
-            font-size: 12px;
-        }
-
-        .delete-btn {
-            right: 5px;
-            background: #ff5252;
-        }
-
-        .edit-btn {
-            right: 35px;
-            background: #667eea;
-        }
-
-        .template-card:hover .delete-btn,
-        .template-card:hover .edit-btn {
-            display: block;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .font-mode-toggle {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .font-mode-btn {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .font-mode-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        .font-settings {
-            display: none;
-        }
-
-        .font-settings.active {
-            display: block;
-        }
-
-        .info-box {
-            padding: 10px;
-            background: #fff8e1;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #f57c00;
-            margin-top: 15px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
+        /* 模態框樣式 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: white; margin: 3% auto; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: #000; }
     </style>
 </head>
 <body>
@@ -312,7 +83,6 @@
         </div>
 
         <div class="content">
-            <!-- 自定義模板區 -->
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <div class="section-title">🎨 自定義模板</div>
@@ -323,53 +93,40 @@
                         <button class="btn btn-primary" onclick="openTemplateModal()">+ 新增模板</button>
                     </div>
                 </div>
-                
                 <div class="template-grid" id="templateGrid">
                     <div class="add-template-card" onclick="openTemplateModal()">
                         <div style="font-size: 48px; color: #667eea;">+</div>
                         <div style="color: #667eea; margin-top: 10px;">新增模板</div>
                     </div>
                 </div>
-                <div class="info-box">
-                    💡 <strong>提示：</strong>點擊模板套用所有設定，再次點擊取消選擇。當前使用模板：<span id="currentTemplate">無</span>
-                </div>
+                <div class="info-box">💡 <strong>提示：</strong>點擊模板套用所有設定，再次點擊取消選擇。當前使用模板：<span id="currentTemplate">無</span></div>
             </div>
 
-            <!-- 文字輸入區 -->
             <div class="section">
                 <div class="section-title">輸入文字（最多22字元）</div>
                 <textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;">Hello, 世界!</textarea>
                 <div class="char-counter" id="charCounter">10 / 22</div>
             </div>
 
-            <!-- 字體設定區 -->
             <div class="section">
                 <div class="section-title">字體設定</div>
-                
-                <!-- 字體模式切換 -->
                 <div class="font-mode-toggle">
-                    <button class="font-mode-btn active" onclick="switchFontMode('single')">統一字體</button>
-                    <button class="font-mode-btn" onclick="switchFontMode('dual')">中英分離</button>
+                    <button class="font-mode-btn active" onclick="switchFontMode('single', event)">統一字體</button>
+                    <button class="font-mode-btn" onclick="switchFontMode('dual', event)">中英分離</button>
                 </div>
-
-                <!-- 統一字體設定 -->
                 <div id="singleFontSettings" class="font-settings active">
-                    <div class="grid-2">
-                        <div>
-                            <label>字體</label>
-                            <select id="fontFamily">
-                                <option value="'Rage Italic', cursive">Rage Italic</option>
-                                <option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option>
-                                <option value="'Taipei Sans TC Beta', 'Noto Sans TC', sans-serif">Taipei Sans TC Beta</option>
-                                <option value="'Noto Sans CJK TC', 'Noto Sans TC', sans-serif" selected>Noto Sans CJK TC</option>
-                                <option value="Arial, sans-serif">Arial</option>
-                                <option value="'Microsoft JhengHei', '微軟正黑體', sans-serif">微軟正黑體</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label>字體</label>
+                        <select id="fontFamily">
+                            <option value="'Rage Italic', cursive">Rage Italic</option>
+                            <option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option>
+                            <option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option>
+                            <option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option>
+                            <option value="'微軟正黑體', sans-serif">微軟正黑體</option>
+                            <option value="Arial, sans-serif">Arial (系統)</option>
+                        </select>
                     </div>
                 </div>
-
-                <!-- 中英分離字體設定 -->
                 <div id="dualFontSettings" class="font-settings">
                     <div class="grid-2">
                         <div>
@@ -377,59 +134,35 @@
                             <select id="englishFont">
                                 <option value="'Rage Italic', cursive">Rage Italic</option>
                                 <option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option>
-                                <option value="Arial, sans-serif">Arial</option>
-                                <option value="Georgia, serif">Georgia</option>
-                                <option value="'Times New Roman', serif">Times New Roman</option>
-                                <option value="'Courier New', monospace">Courier New</option>
+                                <option value="Arial, sans-serif">Arial (系統)</option>
                             </select>
                         </div>
                         <div>
                             <label>中文字體</label>
                             <select id="chineseFont">
-                                <option value="'Taipei Sans TC Beta', 'Noto Sans TC', sans-serif">Taipei Sans TC Beta</option>
-                                <option value="'Noto Sans CJK TC', 'Noto Sans TC', sans-serif" selected>Noto Sans CJK TC</option>
-                                <option value="'Microsoft JhengHei', '微軟正黑體', sans-serif">微軟正黑體</option>
-                                <option value="'PMingLiU', '新細明體', serif">新細明體</option>
-                                <option value="'DFKai-SB', '標楷體', serif">標楷體</option>
+                                <option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option>
+                                <option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option>
+                                <option value="'微軟正黑體', sans-serif">微軟正黑體</option>
                             </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 其他設定區 -->
             <div class="section">
                 <div class="section-title">輸出設定</div>
                 <div class="grid-2">
-                    <div>
-                        <label>字級 (px)</label>
-                        <input type="number" id="fontSize" value="42.34" min="8" max="200" step="0.01">
-                    </div>
-                    <div>
-                        <label>字距 (px)</label>
-                        <input type="number" id="letterSpacing" value="15" min="-10" max="500">
-                    </div>
-                    <div>
-                        <label>高度 (px)</label>
-                        <input type="number" id="height" value="53" min="20" max="500">
-                    </div>
-                    <div>
-                        <label>文字顏色</label>
-                        <input type="color" id="textColor" value="#000000">
-                    </div>
+                    <div><label>字級 (px)</label><input type="number" id="fontSize" value="42.34" min="8" max="200" step="0.01"></div>
+                    <div><label>字距 (px)</label><input type="number" id="letterSpacing" value="15" min="-10" max="500"></div>
+                    <div id="heightInputContainer" style="display: none;"><label>高度 (px)</label><input type="number" id="height" value="53" min="20" max="500"></div>
+                    <div><label>文字顏色</label><input type="color" id="textColor" value="#000000"></div>
                 </div>
-                
                 <div class="checkbox-group">
-                    <input type="checkbox" id="rotate180">
-                    <label for="rotate180">旋轉180度</label>
+                    <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
                 </div>
-                
-                <div class="info-box">
-                    📌 <strong>輸出說明：</strong>PNG將使用透明背景，預覽中的格子只是顯示透明效果。
-                </div>
+                <div class="info-box">📌 <strong>輸出說明：</strong>PNG將使用透明背景，預覽中的格子只是顯示透明效果。</div>
             </div>
 
-            <!-- 預覽區 -->
             <div class="section">
                 <div class="section-title">預覽</div>
                 <canvas id="canvas"></canvas>
@@ -442,118 +175,68 @@
         </div>
     </div>
 
-    <!-- 模板編輯模態框 -->
     <div id="templateModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
             <h2 style="margin-bottom: 20px;">📝 模板設定</h2>
             <input type="hidden" id="editIndex" value="-1">
-            
-            <div style="margin-bottom: 15px;">
-                <label>模板名稱 *</label>
-                <input type="text" id="templateName" placeholder="例如：網站標題">
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label>字體模式</label>
-                <select id="templateFontMode">
-                    <option value="single">統一字體</option>
-                    <option value="dual">中英分離</option>
-                </select>
-            </div>
-            
+            <div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div>
+            <div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
             <div style="margin-bottom: 15px;">
                 <label>統一字體（統一模式用）</label>
                 <select id="templateSingleFont">
                     <option value="'Rage Italic', cursive">Rage Italic</option>
                     <option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option>
-                    <option value="'Taipei Sans TC Beta', 'Noto Sans TC', sans-serif">Taipei Sans TC Beta</option>
-                    <option value="'Noto Sans CJK TC', 'Noto Sans TC', sans-serif" selected>Noto Sans CJK TC</option>
-                    <option value="Arial, sans-serif">Arial</option>
-                    <option value="'Microsoft JhengHei', '微軟正黑體', sans-serif">微軟正黑體</option>
+                    <option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option>
+                    <option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option>
+                    <option value="'微軟正黑體', sans-serif">微軟正黑體</option>
+                    <option value="Arial, sans-serif">Arial (系統)</option>
                 </select>
             </div>
-            
             <div class="grid-2" style="margin-bottom: 15px;">
                 <div>
                     <label>英文字體（分離模式用）</label>
                     <select id="templateEnglishFont">
                         <option value="'Rage Italic', cursive">Rage Italic</option>
                         <option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option>
-                        <option value="Arial, sans-serif">Arial</option>
-                        <option value="Georgia, serif">Georgia</option>
-                        <option value="'Times New Roman', serif">Times New Roman</option>
-                        <option value="'Courier New', monospace">Courier New</option>
+                        <option value="Arial, sans-serif">Arial (系統)</option>
                     </select>
                 </div>
                 <div>
                     <label>中文字體（分離模式用）</label>
                     <select id="templateChineseFont">
-                        <option value="'Taipei Sans TC Beta', 'Noto Sans TC', sans-serif">Taipei Sans TC Beta</option>
-                        <option value="'Noto Sans CJK TC', 'Noto Sans TC', sans-serif" selected>Noto Sans CJK TC</option>
-                        <option value="'Microsoft JhengHei', '微軟正黑體', sans-serif">微軟正黑體</option>
-                        <option value="'PMingLiU', '新細明體', serif">新細明體</option>
-                        <option value="'DFKai-SB', '標楷體', serif">標楷體</option>
+                        <option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option>
+                        <option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option>
+                        <option value="'微軟正黑體', sans-serif">微軟正黑體</option>
                     </select>
                 </div>
             </div>
-            
             <div class="grid-2" style="margin-bottom: 15px;">
-                <div>
-                    <label>高度 (px)</label>
-                    <input type="number" id="templateHeight" value="53">
-                </div>
-                <div>
-                    <label>字級 (px)</label>
-                    <input type="number" id="templateFontSize" value="42.34" step="0.01">
-                </div>
-                <div>
-                    <label>字距 (px)</label>
-                    <input type="number" id="templateLetterSpacing" value="15">
-                </div>
-                <div>
-                    <label>文字顏色</label>
-                    <input type="color" id="templateTextColor" value="#000000">
-                </div>
+                <div><label>字級 (px)</label><input type="number" id="templateFontSize" value="42.34" step="0.01"></div>
+                <div><label>字距 (px)</label><input type="number" id="templateLetterSpacing" value="15"></div>
+                <div><label>文字顏色</label><input type="color" id="templateTextColor" value="#000000"></div>
             </div>
-            
-            <div style="margin-bottom: 15px;">
-                <input type="checkbox" id="templateRotate">
-                <label for="templateRotate">旋轉180度</label>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label>描述（選填）</label>
-                <input type="text" id="templateDesc" placeholder="例如：適用於主標題">
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <button class="btn btn-primary" onclick="saveTemplate()">儲存模板</button>
-                <button class="btn btn-secondary" onclick="closeModal()" style="margin-left: 10px;">取消</button>
-            </div>
+            <div style="margin-bottom: 15px;"><input type="checkbox" id="templateRotate"><label for="templateRotate">旋轉180度</label></div>
+            <div style="margin-bottom: 15px;"><label>描述（選填）</label><input type="text" id="templateDesc" placeholder="例如：適用於主標題"></div>
+            <div style="margin-top: 20px;"><button class="btn btn-primary" onclick="saveTemplate()">儲存模板</button><button class="btn btn-secondary" onclick="closeModal()" style="margin-left: 10px;">取消</button></div>
         </div>
     </div>
 
     <script>
-        // 全域變數
-        let templates = [];
-        let fontMode = 'single';
-        let currentTemplateName = null;
-
-        // 初始化
-        window.onload = function() {
-            loadTemplates();
+        let templates = []; let fontMode = 'single'; let currentTemplateName = null;
+        
+        // --- 功能更新: window.onload 改為 async 以處理非同步載入 ---
+        window.onload = async function() {
+            await loadTemplates(); // 等待模板載入完成
+            
+            // 頁面初始化
             updateCanvas();
             checkCharCount();
             
-            // 綁定事件
-            document.getElementById('textInput').addEventListener('input', function() {
-                checkCharCount();
-                updateCanvas();
-            });
+            // 綁定事件監聽
+            document.getElementById('textInput').addEventListener('input', () => { checkCharCount(); updateCanvas(); });
             document.getElementById('fontSize').addEventListener('input', updateCanvas);
             document.getElementById('letterSpacing').addEventListener('input', updateCanvas);
-            document.getElementById('height').addEventListener('input', updateCanvas);
             document.getElementById('textColor').addEventListener('input', updateCanvas);
             document.getElementById('fontFamily').addEventListener('change', updateCanvas);
             document.getElementById('englishFont').addEventListener('change', updateCanvas);
@@ -561,105 +244,66 @@
             document.getElementById('rotate180').addEventListener('change', updateCanvas);
         };
 
-        // 切換字體模式
-        function switchFontMode(mode) {
+        function switchFontMode(mode, event) {
             fontMode = mode;
-            
-            // 更新按鈕狀態
-            document.querySelectorAll('.font-mode-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            // 顯示對應的設定區
+            document.querySelectorAll('.font-mode-btn').forEach(btn => btn.classList.remove('active'));
+            if (event) event.target.classList.add('active');
             document.getElementById('singleFontSettings').classList.toggle('active', mode === 'single');
             document.getElementById('dualFontSettings').classList.toggle('active', mode === 'dual');
-            
             updateCanvas();
         }
-
-        // 判斷是否為中文字符
-        function isChinese(char) {
-            const code = char.charCodeAt(0);
-            return (code >= 0x4E00 && code <= 0x9FFF) || // CJK統一漢字
-                   (code >= 0x3400 && code <= 0x4DBF) || // CJK擴展A
-                   (code >= 0x3000 && code <= 0x303F) || // CJK符號和標點
-                   (code >= 0xFF00 && code <= 0xFFEF) || // 全形字符
-                   (code >= 0x3040 && code <= 0x309F) || // 平假名
-                   (code >= 0x30A0 && code <= 0x30FF) || // 片假名
-                   (code >= 0xAC00 && code <= 0xD7AF);   // 韓文
-        }
-
-        // 載入模板
-        function loadTemplates() {
+        function isChinese(char) { const code = char.charCodeAt(0); return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF) || (code >= 0x3000 && code <= 0x303F) || (code >= 0xFF00 && code <= 0xFFEF) || (code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF) || (code >= 0xAC00 && code <= 0xD7AF); }
+        
+        // --- 功能更新: loadTemplates 現在會非同步載入根目錄的 templates.json ---
+        async function loadTemplates() {
             const saved = localStorage.getItem('pngTemplates');
             if (saved) {
+                console.log('從 localStorage 載入模板。');
                 templates = JSON.parse(saved);
-            } else {
-                // 預設模板
-                templates = [
-                    {
-                        name: '標準模板',
-                        height: 53,
-                        fontSize: 42.34,
-                        letterSpacing: 15,
-                        fontMode: 'single',
-                        singleFont: "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif",
-                        textColor: '#000000',
-                        rotate: false,
-                        desc: '預設標準模板'
-                    }
-                ];
-                saveTemplatesLocal();
+                renderTemplates();
+                return;
             }
+
+            try {
+                const response = await fetch('templates.json'); // 從根目錄獲取
+                if (response.ok) {
+                    const rootTemplates = await response.json();
+                    if (Array.isArray(rootTemplates) && rootTemplates.length > 0) {
+                        console.log('從根目錄 templates.json 導入模板。');
+                        templates = rootTemplates;
+                        saveTemplatesLocal();
+                        renderTemplates();
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.log("未在根目錄找到 templates.json 或讀取失敗。");
+            }
+            
+            // 如果以上都失敗，則使用預設模板
+            console.log('使用預設模板。');
+            templates = [{ name: '標準模板', fontSize: 42.34, letterSpacing: 15, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' }];
+            saveTemplatesLocal();
             renderTemplates();
         }
 
-        // 儲存到 localStorage
-        function saveTemplatesLocal() {
-            localStorage.setItem('pngTemplates', JSON.stringify(templates));
-        }
-
-        // 渲染模板
+        function saveTemplatesLocal() { localStorage.setItem('pngTemplates', JSON.stringify(templates)); }
         function renderTemplates() {
             const grid = document.getElementById('templateGrid');
-            grid.innerHTML = `
-                <div class="add-template-card" onclick="openTemplateModal()">
-                    <div style="font-size: 48px; color: #667eea;">+</div>
-                    <div style="color: #667eea; margin-top: 10px;">新增模板</div>
-                </div>
-            `;
-            
+            grid.innerHTML = `<div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>`;
             templates.forEach((template, index) => {
                 const card = document.createElement('div');
                 card.className = 'template-card';
-                if (template.name === currentTemplateName) {
-                    card.classList.add('active');
-                }
-                card.innerHTML = `
-                    <button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button>
-                    <button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button>
-                    <div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div>
-                    <div style="font-size: 12px; color: #666;">
-                        ${template.fontSize}px | 字距${template.letterSpacing}px<br>
-                        ${template.fontMode === 'dual' ? '中英分離' : '統一字體'}
-                        ${template.rotate ? '<br>旋轉180°' : ''}
-                        ${template.desc ? '<br>' + template.desc : ''}
-                    </div>
-                `;
+                if (template.name === currentTemplateName) card.classList.add('active');
+                card.innerHTML = `<button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button><button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button><div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div><div style="font-size: 12px; color: #666;">${template.fontSize}px | 字距${template.letterSpacing}px<br>${template.fontMode === 'dual' ? '中英分離' : '統一字體'}${template.rotate ? '<br>旋轉180°' : ''}${template.desc ? '<br>' + template.desc : ''}</div>`;
                 card.onclick = () => applyTemplate(template);
                 grid.appendChild(card);
             });
         }
-
-        // 開啟模板模態框
         function openTemplateModal() {
             document.getElementById('templateModal').style.display = 'block';
             document.getElementById('editIndex').value = '-1';
-            
-            // 載入當前設定作為預設值
             document.getElementById('templateName').value = '';
-            document.getElementById('templateHeight').value = document.getElementById('height').value;
             document.getElementById('templateFontSize').value = document.getElementById('fontSize').value;
             document.getElementById('templateLetterSpacing').value = document.getElementById('letterSpacing').value;
             document.getElementById('templateFontMode').value = fontMode;
@@ -670,23 +314,12 @@
             document.getElementById('templateRotate').checked = document.getElementById('rotate180').checked;
             document.getElementById('templateDesc').value = '';
         }
-
-        // 關閉模態框
-        function closeModal() {
-            document.getElementById('templateModal').style.display = 'none';
-        }
-
-        // 儲存模板
+        function closeModal() { document.getElementById('templateModal').style.display = 'none'; }
         function saveTemplate() {
             const name = document.getElementById('templateName').value.trim();
-            if (!name) {
-                alert('請輸入模板名稱');
-                return;
-            }
-
+            if (!name) { alert('請輸入模板名稱'); return; }
             const template = {
                 name: name,
-                height: parseInt(document.getElementById('templateHeight').value),
                 fontSize: parseFloat(document.getElementById('templateFontSize').value),
                 letterSpacing: parseInt(document.getElementById('templateLetterSpacing').value),
                 fontMode: document.getElementById('templateFontMode').value,
@@ -697,255 +330,143 @@
                 rotate: document.getElementById('templateRotate').checked,
                 desc: document.getElementById('templateDesc').value.trim()
             };
-
             const editIndex = parseInt(document.getElementById('editIndex').value);
-            if (editIndex >= 0) {
-                templates[editIndex] = template;
-            } else {
-                templates.push(template);
-            }
-
-            saveTemplatesLocal();
-            renderTemplates();
-            closeModal();
-            alert('模板已儲存！');
+            if (editIndex >= 0) { templates[editIndex] = template; } else { templates.push(template); }
+            saveTemplatesLocal(); renderTemplates(); closeModal(); alert('模板已儲存！');
         }
-
-        // 編輯模板
         function editTemplate(index) {
             const template = templates[index];
             document.getElementById('templateModal').style.display = 'block';
             document.getElementById('editIndex').value = index;
             document.getElementById('templateName').value = template.name;
-            document.getElementById('templateHeight').value = template.height;
             document.getElementById('templateFontSize').value = template.fontSize;
             document.getElementById('templateLetterSpacing').value = template.letterSpacing;
             document.getElementById('templateFontMode').value = template.fontMode || 'single';
-            document.getElementById('templateSingleFont').value = template.singleFont || "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif";
+            document.getElementById('templateSingleFont').value = template.singleFont || "'Noto Sans CJK TC', sans-serif";
             document.getElementById('templateEnglishFont').value = template.englishFont || "'Avenir Next Condensed', sans-serif";
-            document.getElementById('templateChineseFont').value = template.chineseFont || "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif";
+            document.getElementById('templateChineseFont').value = template.chineseFont || "'Noto Sans CJK TC', sans-serif";
             document.getElementById('templateTextColor').value = template.textColor || '#000000';
             document.getElementById('templateRotate').checked = template.rotate || false;
             document.getElementById('templateDesc').value = template.desc || '';
         }
-
-        // 刪除模板
-        function deleteTemplate(index) {
-            if (confirm('確定要刪除這個模板嗎？')) {
-                templates.splice(index, 1);
-                saveTemplatesLocal();
-                renderTemplates();
-            }
-        }
-
-        // 套用模板
+        function deleteTemplate(index) { if (confirm('確定要刪除這個模板嗎？')) { templates.splice(index, 1); saveTemplatesLocal(); renderTemplates(); } }
         function applyTemplate(template) {
-            // 如果點擊的是當前已選擇的模板，則取消選擇
-            if (currentTemplateName === template.name) {
-                currentTemplateName = null;
-                document.getElementById('currentTemplate').textContent = '無';
-                renderTemplates(); // 更新視覺狀態
-                alert('已取消選擇模板');
-                return;
-            }
-            
-            document.getElementById('height').value = template.height;
+            if (currentTemplateName === template.name) { currentTemplateName = null; document.getElementById('currentTemplate').textContent = '無'; renderTemplates(); alert('已取消選擇模板'); return; }
             document.getElementById('fontSize').value = template.fontSize;
             document.getElementById('letterSpacing').value = template.letterSpacing;
             document.getElementById('textColor').value = template.textColor || '#000000';
             document.getElementById('rotate180').checked = template.rotate || false;
-            
-            // 套用字體模式和字體
-            if (template.fontMode === 'dual') {
-                document.querySelectorAll('.font-mode-btn')[1].click();
+            const fontModeToApply = template.fontMode || 'single';
+            const modeButtonIndex = fontModeToApply === 'dual' ? 1 : 0;
+            document.querySelectorAll('.font-mode-btn')[modeButtonIndex].click();
+            if (fontModeToApply === 'dual') {
                 document.getElementById('englishFont').value = template.englishFont || "'Avenir Next Condensed', sans-serif";
-                document.getElementById('chineseFont').value = template.chineseFont || "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif";
+                document.getElementById('chineseFont').value = template.chineseFont || "'Noto Sans CJK TC', sans-serif";
             } else {
-                document.querySelectorAll('.font-mode-btn')[0].click();
-                document.getElementById('fontFamily').value = template.singleFont || "'Noto Sans CJK TC', 'Noto Sans TC', sans-serif";
+                document.getElementById('fontFamily').value = template.singleFont || "'Noto Sans CJK TC', sans-serif";
             }
-            
             currentTemplateName = template.name;
             document.getElementById('currentTemplate').textContent = template.name;
-            renderTemplates(); // 更新視覺狀態
+            renderTemplates();
             updateCanvas();
             alert(`已套用模板：${template.name}`);
         }
-
-        // 匯出模板
-        function exportTemplates() {
-            if (templates.length === 0) {
-                alert('沒有可匯出的模板');
-                return;
-            }
-            const dataStr = JSON.stringify(templates, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `templates-${Date.now()}.json`;
-            link.click();
-        }
-
-        // 匯入模板
-        function importTemplates(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    templates = templates.concat(imported);
-                    saveTemplatesLocal();
-                    renderTemplates();
-                    alert('模板匯入成功！');
-                } catch (error) {
-                    alert('匯入失敗：檔案格式錯誤');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // 檢查字數
-        function checkCharCount() {
-            const text = document.getElementById('textInput').value;
-            const count = text.length;
-            const counter = document.getElementById('charCounter');
-            const downloadBtn = document.getElementById('downloadBtn');
-            
-            counter.textContent = `${count} / 22`;
-            
-            if (count > 22) {
-                counter.className = 'char-counter error';
-                downloadBtn.disabled = true;
-            } else {
-                counter.className = 'char-counter';
-                downloadBtn.disabled = false;
-            }
-        }
-
-        // 更新畫布
+        function exportTemplates() { if (templates.length === 0) { alert('沒有可匯出的模板'); return; } const dataStr = JSON.stringify(templates, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.href = url; link.download = `templates-${Date.now()}.json`; link.click(); URL.revokeObjectURL(url); }
+        function importTemplates(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const imported = JSON.parse(e.target.result); if (Array.isArray(imported)) { templates = templates.concat(imported); saveTemplatesLocal(); renderTemplates(); alert('模板匯入成功！'); } else { alert('匯入失敗：檔案格式無效'); } } catch (error) { alert('匯入失敗：檔案格式錯誤'); } }; reader.readAsText(file); event.target.value = ''; }
+        function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); const downloadBtn = document.getElementById('downloadBtn'); counter.textContent = `${count} / 22`; if (count > 22) { counter.className = 'char-counter error'; downloadBtn.disabled = true; } else { counter.className = 'char-counter'; downloadBtn.disabled = false; } }
+        
         function updateCanvas() {
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
-            
             const text = document.getElementById('textInput').value || 'Hello, 世界!';
             const fontSize = parseFloat(document.getElementById('fontSize').value);
             const letterSpacing = parseInt(document.getElementById('letterSpacing').value);
-            const height = parseInt(document.getElementById('height').value);
             const textColor = document.getElementById('textColor').value;
             const rotate = document.getElementById('rotate180').checked;
+            const singleFont = document.getElementById('fontFamily').value;
+            const englishFont = document.getElementById('englishFont').value;
+            const chineseFont = document.getElementById('chineseFont').value;
+
+            let totalWidth = 0;
+            let maxAscent = 0;
+            let maxDescent = 0;
             
-            // 取得字體設定
-            let singleFont = document.getElementById('fontFamily').value;
-            let englishFont = document.getElementById('englishFont').value;
-            let chineseFont = document.getElementById('chineseFont').value;
-            
-            // 計算寬度
-            let width = 40; // padding
-            
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const font = fontMode === 'dual' 
-                    ? (isChinese(char) ? chineseFont : englishFont)
-                    : singleFont;
-                
-                ctx.font = `${fontSize}px ${font}`;
-                width += ctx.measureText(char).width;
-                
-                if (i < text.length - 1) {
-                    width += letterSpacing;
+            if (text.length > 0) {
+                // 第一次遍歷：計算總寬度和獲取最大字高和字深
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
+                    ctx.font = `${fontSize}px ${font}`;
+                    const metrics = ctx.measureText(char);
+                    
+                    const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
+                    const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
+                    
+                    totalWidth += metrics.width;
+                    maxAscent = Math.max(maxAscent, ascent);
+                    maxDescent = Math.max(maxDescent, descent);
                 }
+                totalWidth += letterSpacing * (text.length - 1);
             }
+
+            const horizontalPadding = 5;
+            const verticalPadding = 4;
             
-            // 設定畫布尺寸
-            canvas.width = width;
-            canvas.height = height;
+            const dynamicHeight = maxAscent + maxDescent + verticalPadding;
+            canvas.width = (totalWidth > 0 ? totalWidth : 1) + horizontalPadding;
+            canvas.height = dynamicHeight > 0 ? dynamicHeight : 1;
             
-            // 清空畫布（透明背景）
-            ctx.clearRect(0, 0, width, height);
-            
-            // 如果需要旋轉
             if (rotate) {
                 ctx.save();
-                ctx.translate(width/2, height/2);
+                ctx.translate(canvas.width / 2, canvas.height / 2);
                 ctx.rotate(Math.PI);
-                ctx.translate(-width/2, -height/2);
+                ctx.translate(-canvas.width / 2, -canvas.height / 2);
             }
             
-            // 繪製文字
+            ctx.textBaseline = 'alphabetic';
             ctx.fillStyle = textColor;
-            ctx.textBaseline = 'middle';
             
-            let x = 20;
-            const y = height / 2;
+            let x = horizontalPadding / 2;
+            const yBaseline = maxAscent + (verticalPadding / 2);
             
-            // 逐字繪製
+            // 第二次遍歷：繪製文字
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
-                const font = fontMode === 'dual' 
-                    ? (isChinese(char) ? chineseFont : englishFont)
-                    : singleFont;
-                
+                const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
                 ctx.font = `${fontSize}px ${font}`;
-                ctx.fillText(char, x, y);
+                ctx.fillText(char, x, yBaseline);
                 x += ctx.measureText(char).width + letterSpacing;
             }
             
-            if (rotate) {
-                ctx.restore();
-            }
+            if (rotate) { ctx.restore(); }
             
-            // 更新尺寸資訊
-            document.getElementById('sizeInfo').textContent = 
-                `尺寸: ${width} × ${height} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
+            document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvas.width)} × ${Math.round(canvas.height)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
         }
 
-        // 下載PNG
         function downloadPNG() {
             const text = document.getElementById('textInput').value;
-            if (text.length > 22) {
-                alert('文字超過22個字元，無法下載！');
-                return;
-            }
-            
+            if (text.length > 22) { alert('文字超過22個字元，無法下載！'); return; }
+            if (text.length === 0) { alert('請輸入文字後再下載！'); return; }
             const canvas = document.getElementById('canvas');
-            
-            // 生成檔名
-            let filename;
             const date = new Date();
             const dateStr = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
             const timeStr = `${String(date.getHours()).padStart(2,'0')}${String(date.getMinutes()).padStart(2,'0')}`;
-            
-            // 處理文字內容，移除特殊字符用於檔名
             const safeText = text.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_').substring(0, 15);
-            
+            let filename;
             if (currentTemplateName) {
-                // 使用模板名稱_文字內容_日期時間
                 filename = `${currentTemplateName}_${safeText}_${dateStr}_${timeStr}.png`;
             } else {
-                // 使用文字內容_參數編寫檔名_日期時間
                 const fontSize = document.getElementById('fontSize').value;
                 const letterSpacing = document.getElementById('letterSpacing').value;
-                const height = document.getElementById('height').value;
                 const rotate = document.getElementById('rotate180').checked ? '_R180' : '';
-                filename = `${safeText}_${fontSize}px_S${letterSpacing}_H${height}${rotate}_${dateStr}_${timeStr}.png`;
+                filename = `${safeText}_${fontSize}px_S${letterSpacing}${rotate}_${dateStr}_${timeStr}.png`;
             }
-            
             const link = document.createElement('a');
             link.download = filename;
-            link.href = canvas.toDataURL();
+            link.href = canvas.toDataURL("image/png");
             link.click();
         }
-
-        // 點擊模態框外部關閉
-        window.onclick = function(event) {
-            const modal = document.getElementById('templateModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        }
+        window.onclick = function(event) { const modal = document.getElementById('templateModal'); if (event.target == modal) { closeModal(); } }
     </script>
 </body>
 </html>
