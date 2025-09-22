@@ -5,31 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文字轉PNG轉換器</title>
     <style>
-        /* 載入您指定的 .woff2 格式字體 */
-        @font-face {
-          font-family: 'Rage Italic';
-          src: url('./fonts/RageItalic.woff2') format('woff2');
-        }
-        @font-face {
-          font-family: 'Avenir Next Condensed';
-          src: url('./fonts/AvenirNextCondensed.woff2') format('woff2');
-        }
-        @font-face {
-          font-family: 'Taipei Sans TC Beta';
-          src: url('./fonts/TaipeiSansTCBeta.woff2') format('woff2');
-        }
-        @font-face {
-          font-family: 'Noto Sans CJK TC';
-          src: url('./fonts/NotoSansCJKtc.woff2') format('woff2');
-        }
-        @font-face {
-          font-family: '微軟正黑體';
-          src: url('./fonts/MicrosoftJhengHei.woff2') format('woff2');
-        }
+        /* 字體宣告移至 JavaScript 中動態載入，此處不再需要 @font-face */
 
         /* 通用樣式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans CJK TC', '微軟正黑體', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        body { font-family: sans-serif; /* 初始設為通用字體，待字體載入後再指定 */ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
         .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
         .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
         .header h1 { font-size: 2em; margin-bottom: 10px; }
@@ -55,8 +35,6 @@
         .font-mode-btn.active { background: #667eea; color: white; border-color: #667eea; }
         .font-settings { display: none; }
         .font-settings.active { display: block; }
-        
-        /* 模板樣式 */
         .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 15px; }
         .template-card { padding: 15px; background: white; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer; text-align: center; transition: all 0.3s; position: relative; min-height: 140px; }
         .template-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
@@ -67,168 +45,112 @@
         .delete-btn { right: 5px; background: #ff5252; }
         .edit-btn { right: 35px; background: #667eea; }
         .template-card:hover .delete-btn, .template-card:hover .edit-btn { display: block; }
-
-        /* 模態框樣式 */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: white; margin: 3% auto; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close:hover { color: #000; }
+        
+        /* 新增：載入畫面樣式 */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: opacity 0.3s;
+        }
+        #loadingBox {
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        #loadingMessage {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        #progressBarContainer {
+            width: 100%;
+            background: #444;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        #progressBar {
+            width: 0%;
+            height: 10px;
+            background: #667eea;
+            transition: width 0.2s ease-out;
+        }
+        #fontStatus {
+            font-size: 0.9em;
+            height: 20px;
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
+    <div id="loadingOverlay">
+        <div id="loadingBox">
+            <div id="loadingMessage">正在載入字體...</div>
+            <div id="progressBarContainer">
+                <div id="progressBar"></div>
+            </div>
+            <div id="fontStatus">(0/5)</div>
+        </div>
+    </div>
+
     <div class="container">
-        <div class="header">
-            <h1>✨ 文字轉PNG轉換器</h1>
-            <p>自定義模板 • 22字元限制 • 透明背景 • 中英分離字體</p>
-        </div>
-
+        <div class="header"><h1>✨ 文字轉PNG轉換器</h1><p>自定義模板 • 22字元限制 • 透明背景 • 中英分離字體</p></div>
         <div class="content">
-            <div class="section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div class="section-title">🎨 自定義模板</div>
-                    <div>
-                        <button class="btn btn-secondary" onclick="exportTemplates()">📤 匯出</button>
-                        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin: 0 10px;">📥 匯入</button>
-                        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTemplates(event)">
-                        <button class="btn btn-primary" onclick="openTemplateModal()">+ 新增模板</button>
-                    </div>
-                </div>
-                <div class="template-grid" id="templateGrid">
-                    <div class="add-template-card" onclick="openTemplateModal()">
-                        <div style="font-size: 48px; color: #667eea;">+</div>
-                        <div style="color: #667eea; margin-top: 10px;">新增模板</div>
-                    </div>
-                </div>
-                <div class="info-box">💡 <strong>提示：</strong>點擊模板套用所有設定，再次點擊取消選擇。當前使用模板：<span id="currentTemplate">無</span></div>
+            <div class="section"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><div class="section-title">🎨 自定義模板</div><div><button class="btn btn-secondary" onclick="exportTemplates()">📤 匯出</button><button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin: 0 10px;">📥 匯入</button><input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTemplates(event)"><button class="btn btn-primary" onclick="openTemplateModal()">+ 新增模板</button></div></div><div class="template-grid" id="templateGrid"><div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div></div><div class="info-box">💡 <strong>提示：</strong>點擊模板套用所有設定，再次點擊取消選擇。當前使用模板：<span id="currentTemplate">無</span></div></div>
+            <div class="section"><div class="section-title">輸入文字（最多22字元）</div><textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;">Hello, World</textarea><div class="char-counter" id="charCounter">12 / 22</div></div>
+            <div class="section"><div class="section-title">字體設定</div><div class="font-mode-toggle"><button class="font-mode-btn active" onclick="switchFontMode('single', event)">統一字體</button><button class="font-mode-btn" onclick="switchFontMode('dual', event)">中英分離</button></div>
+                <div id="singleFontSettings" class="font-settings active"><div><label>字體</label><select id="fontFamily"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option><option value="Arial, sans-serif">Arial (系統)</option></select></div></div>
+                <div id="dualFontSettings" class="font-settings"><div class="grid-2"><div><label>英文字體</label><select id="englishFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option><option value="Arial, sans-serif">Arial (系統)</option></select></div><div><label>中文字體</label><select id="chineseFont"><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option></select></div></div></div>
             </div>
-
-            <div class="section">
-                <div class="section-title">輸入文字（最多22字元）</div>
-                <textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;">Hello, World</textarea>
-                <div class="char-counter" id="charCounter">12 / 22</div>
-            </div>
-
-            <div class="section">
-                <div class="section-title">字體設定</div>
-                <div class="font-mode-toggle">
-                    <button class="font-mode-btn active" onclick="switchFontMode('single', event)">統一字體</button>
-                    <button class="font-mode-btn" onclick="switchFontMode('dual', event)">中英分離</button>
-                </div>
-                <div id="singleFontSettings" class="font-settings active">
-                    <div>
-                        <label>字體</label>
-                        <select id="fontFamily">
-                            <option value="'Rage Italic', cursive">Rage Italic</option>
-                            <option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option>
-                            <option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option>
-                            <option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option>
-                            <option value="'微軟正黑體', sans-serif">微軟正黑體</option>
-                            <option value="Arial, sans-serif">Arial (系統)</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="dualFontSettings" class="font-settings">
-                    <div class="grid-2">
-                        <div>
-                            <label>英文字體</label>
-                            <select id="englishFont">
-                                <option value="'Rage Italic', cursive">Rage Italic</option>
-                                <option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option>
-                                <option value="Arial, sans-serif">Arial (系統)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>中文字體</label>
-                            <select id="chineseFont">
-                                <option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option>
-                                <option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option>
-                                <option value="'微軟正黑體', sans-serif">微軟正黑體</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="section-title">輸出設定</div>
-                <div class="grid-2">
-                    <div><label>字級 (px)</label><input type="number" id="fontSize" value="42.34" min="8" max="200" step="0.01"></div>
-                    <div><label>字距 (px)</label><input type="number" id="letterSpacing" value="15" min="-10" max="500"></div>
-                    <div id="heightInputContainer" style="display: none;"><label>高度 (px)</label><input type="number" id="height" value="53" min="20" max="500"></div>
-                    <div><label>文字顏色</label><input type="color" id="textColor" value="#000000"></div>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
-                </div>
-                <div class="info-box">📌 <strong>輸出說明：</strong>PNG將使用透明背景，預覽中的格子只是顯示透明效果。</div>
-            </div>
-
-            <div class="section">
-                <div class="section-title">預覽</div>
-                <canvas id="canvas"></canvas>
-                <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;" id="sizeInfo">尺寸資訊</div>
-                <div style="text-align: center; margin-top: 20px;">
-                    <button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button>
-                </div>
-            </div>
+            <div class="section"><div class="section-title">輸出設定</div><div class="grid-2"><div><label>字級 (px)</label><input type="number" id="fontSize" value="42.34" min="8" max="200" step="0.01"></div><div><label>字距 (px)</label><input type="number" id="letterSpacing" value="15" min="-10" max="500"></div><div id="heightInputContainer" style="display: none;"><label>高度 (px)</label><input type="number" id="height" value="53" min="20" max="500"></div><div><label>文字顏色</label><input type="color" id="textColor" value="#000000"></div></div><div class="checkbox-group"><input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label></div><div class="info-box">📌 <strong>輸出說明：</strong>PNG將使用透明背景，預覽中的格子只是顯示透明效果。</div></div>
+            <div class="section"><div class="section-title">預覽</div><canvas id="canvas"></canvas><div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;" id="sizeInfo">尺寸資訊</div><div style="text-align: center; margin-top: 20px;"><button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button></div></div>
         </div>
     </div>
-
-    <div id="templateModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2 style="margin-bottom: 20px;">📝 模板設定</h2>
-            <input type="hidden" id="editIndex" value="-1">
-            <div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div>
-            <div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
-            <div style="margin-bottom: 15px;">
-                <label>統一字體（統一模式用）</label>
-                <select id="templateSingleFont">
-                    <option value="'Rage Italic', cursive">Rage Italic</option>
-                    <option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option>
-                    <option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option>
-                    <option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option>
-                    <option value="'微軟正黑體', sans-serif">微軟正黑體</option>
-                    <option value="Arial, sans-serif">Arial (系統)</option>
-                </select>
-            </div>
-            <div class="grid-2" style="margin-bottom: 15px;">
-                <div>
-                    <label>英文字體（分離模式用）</label>
-                    <select id="templateEnglishFont">
-                        <option value="'Rage Italic', cursive">Rage Italic</option>
-                        <option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option>
-                        <option value="Arial, sans-serif">Arial (系統)</option>
-                    </select>
-                </div>
-                <div>
-                    <label>中文字體（分離模式用）</label>
-                    <select id="templateChineseFont">
-                        <option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option>
-                        <option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option>
-                        <option value="'微軟正黑體', sans-serif">微軟正黑體</option>
-                    </select>
-                </div>
-            </div>
-            <div class="grid-2" style="margin-bottom: 15px;">
-                <div><label>字級 (px)</label><input type="number" id="templateFontSize" value="42.34" step="0.01"></div>
-                <div><label>字距 (px)</label><input type="number" id="templateLetterSpacing" value="15"></div>
-                <div><label>文字顏色</label><input type="color" id="templateTextColor" value="#000000"></div>
-            </div>
-            <div style="margin-bottom: 15px;"><input type="checkbox" id="templateRotate"><label for="templateRotate">旋轉180度</label></div>
-            <div style="margin-bottom: 15px;"><label>描述（選填）</label><input type="text" id="templateDesc" placeholder="例如：適用於主標題"></div>
-            <div style="margin-top: 20px;"><button class="btn btn-primary" onclick="saveTemplate()">儲存模板</button><button class="btn btn-secondary" onclick="closeModal()" style="margin-left: 10px;">取消</button></div>
-        </div>
-    </div>
+    <div id="templateModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal()">&times;</span><h2 style="margin-bottom: 20px;">📝 模板設定</h2><input type="hidden" id="editIndex" value="-1"><div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div><div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
+            <div style="margin-bottom: 15px;"><label>統一字體（統一模式用）</label><select id="templateSingleFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option><option value="Arial, sans-serif">Arial (系統)</option></select></div>
+            <div class="grid-2" style="margin-bottom: 15px;"><div><label>英文字體（分離模式用）</label><select id="templateEnglishFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option><option value="Arial, sans-serif">Arial (系統)</option></select></div><div><label>中文字體（分離模式用）</label><select id="templateChineseFont"><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option></select></div></div>
+            <div class="grid-2" style="margin-bottom: 15px;"><div><label>字級 (px)</label><input type="number" id="templateFontSize" value="42.34" step="0.01"></div><div><label>字距 (px)</label><input type="number" id="templateLetterSpacing" value="15"></div><div><label>文字顏色</label><input type="color" id="templateTextColor" value="#000000"></div></div>
+            <div style="margin-bottom: 15px;"><input type="checkbox" id="templateRotate"><label for="templateRotate">旋轉180度</label></div><div style="margin-bottom: 15px;"><label>描述（選填）</label><input type="text" id="templateDesc" placeholder="例如：適用於主標題"></div><div style="margin-top: 20px;"><button class="btn btn-primary" onclick="saveTemplate()">儲存模板</button><button class="btn btn-secondary" onclick="closeModal()" style="margin-left: 10px;">取消</button></div></div></div>
 
     <script>
         let templates = []; let fontMode = 'single'; let currentTemplateName = null;
         
+        // --- 全新的啟動流程 ---
         window.onload = async function() {
-            await loadTemplates();
+            const fontsLoaded = await loadFontsWithProgress();
+            
+            if (fontsLoaded) {
+                // 字體成功載入後才初始化應用
+                await loadTemplates();
+                initApp();
+            }
+        };
+
+        function initApp() {
+            // 移除載入畫面
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.opacity = 0;
+            setTimeout(() => loadingOverlay.style.display = 'none', 300);
+
+            // 設定預設字體
+             document.body.style.fontFamily = "'Noto Sans CJK TC', '微軟正黑體', sans-serif";
+
             updateCanvas();
             checkCharCount();
             
+            // 綁定所有事件監聽器
             document.getElementById('textInput').addEventListener('input', () => { checkCharCount(); updateCanvas(); });
             document.getElementById('fontSize').addEventListener('input', updateCanvas);
             document.getElementById('letterSpacing').addEventListener('input', updateCanvas);
@@ -237,7 +159,47 @@
             document.getElementById('englishFont').addEventListener('change', updateCanvas);
             document.getElementById('chineseFont').addEventListener('change', updateCanvas);
             document.getElementById('rotate180').addEventListener('change', updateCanvas);
-        };
+        }
+
+        async function loadFontsWithProgress() {
+            const fontsToLoad = [
+                { name: 'Rage Italic', url: './fonts/RageItalic.woff2' },
+                { name: 'Avenir Next Condensed', url: './fonts/AvenirNextCondensed.woff2' },
+                { name: 'Taipei Sans TC Beta', url: './fonts/TaipeiSansTCBeta.woff2' },
+                { name: 'Noto Sans CJK TC', url: './fonts/NotoSansCJKtc.woff2' },
+                { name: '微軟正黑體', url: './fonts/MicrosoftJhengHei.woff2' }
+            ];
+
+            const loadingMessage = document.getElementById('loadingMessage');
+            const progressBar = document.getElementById('progressBar');
+            const fontStatus = document.getElementById('fontStatus');
+            let loadedCount = 0;
+
+            const fontPromises = fontsToLoad.map(fontData => {
+                const fontFace = new FontFace(fontData.name, `url(${fontData.url})`);
+                return fontFace.load().then(loadedFont => {
+                    document.fonts.add(loadedFont);
+                    loadedCount++;
+                    progressBar.style.width = `${(loadedCount / fontsToLoad.length) * 100}%`;
+                    fontStatus.textContent = `(${loadedCount}/${fontsToLoad.length}) ${fontData.name}`;
+                }).catch(error => {
+                    // 將錯誤傳遞下去，讓 Promise.all 捕獲
+                    throw new Error(`字體 "${fontData.name}" 載入失敗，請檢查檔案路徑：${fontData.url}`);
+                });
+            });
+
+            try {
+                await Promise.all(fontPromises);
+                loadingMessage.textContent = "字體載入完成！";
+                return true;
+            } catch (error) {
+                // 任何一個字體載入失敗，就會在此捕獲
+                loadingMessage.style.color = '#ff5252';
+                loadingMessage.textContent = '錯誤';
+                fontStatus.textContent = error.message;
+                return false;
+            }
+        }
 
         function switchFontMode(mode, event) {
             fontMode = mode;
@@ -252,32 +214,23 @@
         async function loadTemplates() {
             const saved = localStorage.getItem('pngTemplates');
             if (saved) {
-                console.log('從 localStorage 載入模板。');
                 templates = JSON.parse(saved);
-                renderTemplates();
-                return;
-            }
-
-            try {
-                const response = await fetch('./templates.json');
-                if (response.ok) {
-                    const rootTemplates = await response.json();
-                    if (Array.isArray(rootTemplates) && rootTemplates.length > 0) {
-                        console.log('從根目錄 templates.json 導入模板。');
-                        templates = rootTemplates;
-                        saveTemplatesLocal();
-                        renderTemplates();
-                        return;
+            } else {
+                try {
+                    const response = await fetch('./templates.json');
+                    if (response.ok) {
+                        const rootTemplates = await response.json();
+                        if (Array.isArray(rootTemplates) && rootTemplates.length > 0) {
+                            templates = rootTemplates;
+                        }
                     }
-                } else {
-                    console.log("未在根目錄找到 templates.json，狀態碼:", response.status);
+                } catch (error) {
+                    console.log("讀取 templates.json 失敗:", error);
                 }
-            } catch (error) {
-                console.log("讀取 templates.json 失敗:", error);
             }
-            
-            console.log('使用預設模板。');
-            templates = [{ name: '標準模板', fontSize: 42.34, letterSpacing: 15, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' }];
+            if(templates.length === 0) {
+                 templates = [{ name: '標準模板', fontSize: 42.34, letterSpacing: 15, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' }];
+            }
             saveTemplatesLocal();
             renderTemplates();
         }
@@ -370,7 +323,8 @@
         function importTemplates(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const imported = JSON.parse(e.target.result); if (Array.isArray(imported)) { templates = templates.concat(imported); saveTemplatesLocal(); renderTemplates(); alert('模板匯入成功！'); } else { alert('匯入失敗：檔案格式無效'); } } catch (error) { alert('匯入失敗：檔案格式錯誤'); } }; reader.readAsText(file); event.target.value = ''; }
         function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); const downloadBtn = document.getElementById('downloadBtn'); counter.textContent = `${count} / 22`; if (count > 22) { counter.className = 'char-counter error'; downloadBtn.disabled = true; } else { counter.className = 'char-counter'; downloadBtn.disabled = false; } }
         
-        function updateCanvas() {
+        async function updateCanvas() {
+            await document.fonts.ready;
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
             const text = document.getElementById('textInput').value || 'Hello, World';
@@ -382,34 +336,53 @@
             const englishFont = document.getElementById('englishFont').value;
             const chineseFont = document.getElementById('chineseFont').value;
 
-            let totalWidth = 0;
             let maxAscent = 0;
             let maxDescent = 0;
+            const charMetrics = [];
             
             if (text.length > 0) {
-                // 第一次遍歷：計算總寬度和獲取最大字高和字深
+                // 第一次遍歷：獲取所有度量
                 for (let i = 0; i < text.length; i++) {
                     const char = text[i];
                     const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
                     ctx.font = `${fontSize}px ${font}`;
                     const metrics = ctx.measureText(char);
                     
-                    const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
-                    const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
-                    
-                    totalWidth += metrics.width;
-                    maxAscent = Math.max(maxAscent, ascent);
-                    maxDescent = Math.max(maxDescent, descent);
+                    metrics.actualBoundingBoxAscent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
+                    metrics.actualBoundingBoxDescent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
+                    metrics.actualBoundingBoxLeft = metrics.actualBoundingBoxLeft || 0;
+                    metrics.actualBoundingBoxRight = metrics.actualBoundingBoxRight || metrics.width;
+
+                    charMetrics.push(metrics);
+                    maxAscent = Math.max(maxAscent, metrics.actualBoundingBoxAscent);
+                    maxDescent = Math.max(maxDescent, metrics.actualBoundingBoxDescent);
                 }
-                totalWidth += letterSpacing * (text.length - 1);
             }
 
-            const horizontalPadding = 5;
-            const verticalPadding = 4;
+            // 計算基於 advance width 的總寬度
+            let advanceWidth = 0;
+            for(let i=0; i < charMetrics.length; i++) {
+                advanceWidth += charMetrics[i].width;
+                if (i < text.length - 1) {
+                    advanceWidth += letterSpacing;
+                }
+            }
+
+            // 動態計算左右懸掛
+            let leftHang = 0;
+            let rightHang = 0;
+            if (charMetrics.length > 0) {
+                leftHang = Math.max(0, -charMetrics[0].actualBoundingBoxLeft);
+                const lastMetric = charMetrics[charMetrics.length - 1];
+                const lastCharOverhang = lastMetric.actualBoundingBoxRight - lastMetric.width;
+                rightHang = Math.max(0, lastCharOverhang);
+            }
             
-            const dynamicHeight = maxAscent + maxDescent + verticalPadding;
-            canvas.width = (totalWidth > 0 ? totalWidth : 1) + horizontalPadding;
-            canvas.height = dynamicHeight > 0 ? dynamicHeight : 1;
+            const totalWidth = advanceWidth + leftHang + rightHang;
+            const dynamicHeight = maxAscent + maxDescent;
+            
+            canvas.width = totalWidth > 0 ? Math.ceil(totalWidth) : 1;
+            canvas.height = dynamicHeight > 0 ? Math.ceil(dynamicHeight) : 1;
             
             if (rotate) {
                 ctx.save();
@@ -421,8 +394,8 @@
             ctx.textBaseline = 'alphabetic';
             ctx.fillStyle = textColor;
             
-            let x = horizontalPadding / 2;
-            const yBaseline = maxAscent + (verticalPadding / 2);
+            let x = leftHang; // 從左側懸掛的距離開始繪製
+            const yBaseline = maxAscent;
             
             // 第二次遍歷：繪製文字
             for (let i = 0; i < text.length; i++) {
@@ -430,12 +403,12 @@
                 const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
                 ctx.font = `${fontSize}px ${font}`;
                 ctx.fillText(char, x, yBaseline);
-                x += ctx.measureText(char).width + letterSpacing;
+                x += charMetrics[i].width + letterSpacing;
             }
             
             if (rotate) { ctx.restore(); }
             
-            document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvas.width)} × ${Math.round(canvas.height)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
+            document.getElementById('sizeInfo').textContent = `尺寸: ${canvas.width} × ${canvas.height} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
         }
 
         function downloadPNG() {
