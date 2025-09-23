@@ -277,7 +277,7 @@
             const input = document.getElementById(inputId);
             let value = parseInt(input.value, 10) || 0;
             value += amount;
-            if (value < 0) value = 0; // 防止負值
+            //if (value < 0) value = 0; // 防止負值
             input.value = value;
             input.dispatchEvent(new Event('input'));
         }
@@ -529,3 +529,4 @@
     </script>
 </body>
 </html>
+
