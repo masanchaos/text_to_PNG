@@ -95,14 +95,26 @@
                 <div id="singleFontSettings" class="font-settings active"><div><label>字體</label><select id="fontFamily"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option><option value="Arial, sans-serif">Arial (系統)</option></select></div></div>
                 <div id="dualFontSettings" class="font-settings"><div class="grid-2"><div><label>英文字體</label><select id="englishFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option><option value="Arial, sans-serif">Arial (系統)</option></select></div><div><label>中文字體</label><select id="chineseFont"><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option></select></div></div></div>
             </div>
-            <div class="section"><div class="section-title">輸出設定</div><div class="grid-2"><div><label>字級 (px)</label><input type="number" id="fontSize" value="42.34" min="8" max="200" step="0.01"></div><div><label>字距 (px)</label><input type="number" id="letterSpacing" value="15" min="-10" max="500"></div><div id="heightInputContainer" style="display: none;"><label>高度 (px)</label><input type="number" id="height" value="53" min="20" max="500"></div><div><label>文字顏色</label><input type="color" id="textColor" value="#000000"></div></div><div class="checkbox-group"><input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label></div><div class="info-box">📌 <strong>輸出說明：</strong>PNG將使用透明背景，預覽中的格子只是顯示透明效果。</div></div>
+            <div class="section"><div class="section-title">輸出設定</div>
+                <div class="grid-2">
+                    <div><label>字級 (px)</label><input type="number" id="fontSize" value="42.34" min="8" max="200" step="0.01"></div>
+                    <div><label>字距 (px)</label><input type="number" id="letterSpacing" value="15" min="-10" max="500"></div>
+                    <div><label>文字顏色</label><input type="color" id="textColor" value="#000000"></div>
+                    <div><label>水平邊距 (Padding X)</label><input type="number" id="paddingX" value="10" min="0" max="200"></div>
+                    <div><label>垂直邊距 (Padding Y)</label><input type="number" id="paddingY" value="10" min="0" max="200"></div>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
+                </div>
+                <div class="info-box">📌 <strong>提示：</strong>如果字體被裁切，請試著增加水平或垂直邊距。</div>
+            </div>
             <div class="section"><div class="section-title">預覽</div><canvas id="canvas"></canvas><div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;" id="sizeInfo">尺寸資訊</div><div style="text-align: center; margin-top: 20px;"><button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button></div></div>
         </div>
     </div>
     <div id="templateModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal()">&times;</span><h2 style="margin-bottom: 20px;">📝 模板設定</h2><input type="hidden" id="editIndex" value="-1"><div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div><div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
             <div style="margin-bottom: 15px;"><label>統一字體（統一模式用）</label><select id="templateSingleFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option><option value="Arial, sans-serif">Arial (系統)</option></select></div>
             <div class="grid-2" style="margin-bottom: 15px;"><div><label>英文字體（分離模式用）</label><select id="templateEnglishFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option><option value="Arial, sans-serif">Arial (系統)</option></select></div><div><label>中文字體</label><select id="templateChineseFont"><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option></select></div></div>
-            <div class="grid-2" style="margin-bottom: 15px;"><div><label>字級 (px)</label><input type="number" id="templateFontSize" value="42.34" step="0.01"></div><div><label>字距 (px)</label><input type="number" id="templateLetterSpacing" value="15"></div><div><label>文字顏色</label><input type="color" id="templateTextColor" value="#000000"></div></div>
+            <div class="grid-2" style="margin-bottom: 15px;"><div><label>字級 (px)</label><input type="number" id="templateFontSize" value="42.34" step="0.01"></div><div><label>字距 (px)</label><input type="number" id="templateLetterSpacing" value="15"></div><div><label>文字顏色</label><input type="color" id="templateTextColor" value="#000000"></div><div><label>水平邊距</label><input type="number" id="templatePaddingX" value="10"></div><div><label>垂直邊距</label><input type="number" id="templatePaddingY" value="10"></div></div>
             <div style="margin-bottom: 15px;"><input type="checkbox" id="templateRotate"><label for="templateRotate">旋轉180度</label></div><div style="margin-bottom: 15px;"><label>描述（選填）</label><input type="text" id="templateDesc" placeholder="例如：適用於主標題"></div><div style="margin-top: 20px;"><button class="btn btn-primary" onclick="saveTemplate()">儲存模板</button><button class="btn btn-secondary" onclick="closeModal()" style="margin-left: 10px;">取消</button></div></div></div>
 
     <script>
@@ -128,6 +140,8 @@
             document.getElementById('fontSize').addEventListener('input', updateCanvas);
             document.getElementById('letterSpacing').addEventListener('input', updateCanvas);
             document.getElementById('textColor').addEventListener('input', updateCanvas);
+            document.getElementById('paddingX').addEventListener('input', updateCanvas);
+            document.getElementById('paddingY').addEventListener('input', updateCanvas);
             document.getElementById('fontFamily').addEventListener('change', updateCanvas);
             document.getElementById('englishFont').addEventListener('change', updateCanvas);
             document.getElementById('chineseFont').addEventListener('change', updateCanvas);
@@ -191,7 +205,7 @@
                 } catch (error) { console.log("讀取 templates.json 失敗:", error); }
             }
             if(templates.length === 0) {
-                 templates = [{ name: '標準模板', fontSize: 42.34, letterSpacing: 15, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' }];
+                 templates = [{ name: '標準模板', fontSize: 42.34, letterSpacing: 15, paddingX: 10, paddingY: 10, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' }];
             }
             saveTemplatesLocal();
             renderTemplates();
@@ -216,6 +230,8 @@
             document.getElementById('templateName').value = '';
             document.getElementById('templateFontSize').value = document.getElementById('fontSize').value;
             document.getElementById('templateLetterSpacing').value = document.getElementById('letterSpacing').value;
+            document.getElementById('templatePaddingX').value = document.getElementById('paddingX').value;
+            document.getElementById('templatePaddingY').value = document.getElementById('paddingY').value;
             document.getElementById('templateFontMode').value = fontMode;
             document.getElementById('templateSingleFont').value = document.getElementById('fontFamily').value;
             document.getElementById('templateEnglishFont').value = document.getElementById('englishFont').value;
@@ -232,6 +248,8 @@
                 name: name,
                 fontSize: parseFloat(document.getElementById('templateFontSize').value),
                 letterSpacing: parseInt(document.getElementById('templateLetterSpacing').value),
+                paddingX: parseInt(document.getElementById('templatePaddingX').value),
+                paddingY: parseInt(document.getElementById('templatePaddingY').value),
                 fontMode: document.getElementById('templateFontMode').value,
                 singleFont: document.getElementById('templateSingleFont').value,
                 englishFont: document.getElementById('templateEnglishFont').value,
@@ -251,6 +269,8 @@
             document.getElementById('templateName').value = template.name;
             document.getElementById('templateFontSize').value = template.fontSize;
             document.getElementById('templateLetterSpacing').value = template.letterSpacing;
+            document.getElementById('templatePaddingX').value = template.paddingX || 10;
+            document.getElementById('templatePaddingY').value = template.paddingY || 10;
             document.getElementById('templateFontMode').value = template.fontMode || 'single';
             document.getElementById('templateSingleFont').value = template.singleFont || "'Noto Sans CJK TC', sans-serif";
             document.getElementById('templateEnglishFont').value = template.englishFont || "'Avenir Next Condensed', sans-serif";
@@ -264,6 +284,8 @@
             if (currentTemplateName === template.name) { currentTemplateName = null; document.getElementById('currentTemplate').textContent = '無'; renderTemplates(); alert('已取消選擇模板'); return; }
             document.getElementById('fontSize').value = template.fontSize;
             document.getElementById('letterSpacing').value = template.letterSpacing;
+            document.getElementById('paddingX').value = template.paddingX || 10;
+            document.getElementById('paddingY').value = template.paddingY || 10;
             document.getElementById('textColor').value = template.textColor || '#000000';
             document.getElementById('rotate180').checked = template.rotate || false;
             const fontModeToApply = template.fontMode || 'single';
@@ -294,96 +316,53 @@
             const fontSize = parseFloat(document.getElementById('fontSize').value);
             const letterSpacing = parseInt(document.getElementById('letterSpacing').value);
             const textColor = document.getElementById('textColor').value;
+            const paddingX = parseInt(document.getElementById('paddingX').value) || 0;
+            const paddingY = parseInt(document.getElementById('paddingY').value) || 0;
             const rotate = document.getElementById('rotate180').checked;
             const singleFont = document.getElementById('fontFamily').value;
             const englishFont = document.getElementById('englishFont').value;
             const chineseFont = document.getElementById('chineseFont').value;
-
-            // --- 像素掃描演算法 ---
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
             
-            // 預估一個足夠大的臨時畫布
-            const tempWidth = (fontSize + Math.abs(letterSpacing)) * text.length + 200;
-            const tempHeight = fontSize * 3;
-            tempCanvas.width = tempWidth;
-            tempCanvas.height = tempHeight;
-            tempCtx.textBaseline = 'middle'; // 置中繪製以確保上下都有足夠空間
-            tempCtx.fillStyle = textColor;
-
-            // 在臨時畫布中心繪製
-            let currentX = 0;
+            // 基礎寬度計算
+            let baseWidth = 0;
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
-                tempCtx.font = `${fontSize}px ${font}`;
-                currentX += tempCtx.measureText(char).width + (i < text.length - 1 ? letterSpacing : 0);
+                ctx.font = `${fontSize}px ${font}`;
+                baseWidth += ctx.measureText(char).width;
             }
-            
-            let x = (tempWidth - currentX) / 2;
-            const y = tempHeight / 2;
-            
-            // 繪製文字
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
-                tempCtx.font = `${fontSize}px ${font}`;
-                tempCtx.fillText(char, x, y);
-                x += tempCtx.measureText(char).width + letterSpacing;
-            }
-            
-            // 掃描像素
-            const imageData = tempCtx.getImageData(0, 0, tempWidth, tempHeight);
-            const data = imageData.data;
-            let minX = tempWidth, minY = tempHeight, maxX = -1, maxY = -1;
-
-            for (let j = 0; j < tempHeight; j++) {
-                for (let i = 0; i < tempWidth; i++) {
-                    const alpha = data[(j * tempWidth + i) * 4 + 3];
-                    if (alpha > 0) {
-                        minX = Math.min(minX, i);
-                        maxX = Math.max(maxX, i);
-                        minY = Math.min(minY, j);
-                        maxY = Math.max(maxY, j);
-                    }
-                }
+            if(text.length > 1) {
+                baseWidth += letterSpacing * (text.length - 1);
             }
 
-            if (maxX === -1) { // 處理空文字的情況
-                canvas.width = 1;
-                canvas.height = 1;
-                document.getElementById('sizeInfo').textContent = `尺寸: 1 × 1 px`;
-                return;
-            }
+            // 使用一個固定的高度估算值，因為精確測量不可靠
+            const estimatedHeight = fontSize * 1.2;
 
-            // --- 新增功能：根據使用者要求增加安全邊距 ---
-            const safetyPadding = 2; // 上下左右各 1px
-            const trimmedWidth = (maxX - minX) + 1 + safetyPadding;
-            const trimmedHeight = (maxY - minY) + 1 + safetyPadding;
+            canvas.width = baseWidth + paddingX;
+            canvas.height = estimatedHeight + paddingY;
 
-            canvas.width = trimmedWidth;
-            canvas.height = trimmedHeight;
-            
             if (rotate) {
                 ctx.save();
                 ctx.translate(canvas.width / 2, canvas.height / 2);
                 ctx.rotate(Math.PI);
                 ctx.translate(-canvas.width / 2, -canvas.height / 2);
             }
-            
-            // 從臨時畫布複製裁切後的區域到主畫布
-            ctx.drawImage(
-                tempCanvas, 
-                minX, // 來源 X
-                minY, // 來源 Y
-                (maxX - minX) + 1, // 來源寬度
-                (maxY - minY) + 1, // 來源高度
-                safetyPadding / 2, // 目標 X (留出左邊距)
-                safetyPadding / 2, // 目標 Y (留出上邊距)
-                (maxX - minX) + 1, // 目標寬度
-                (maxY - minY) + 1  // 目標高度
-            );
-            
+
+            ctx.fillStyle = textColor;
+            ctx.textBaseline = 'middle'; // 使用 middle 對齊最穩定
+
+            let x = paddingX / 2;
+            const y = canvas.height / 2;
+
+            // 逐字繪製
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
+                ctx.font = `${fontSize}px ${font}`;
+                ctx.fillText(char, x, y);
+                x += ctx.measureText(char).width + letterSpacing;
+            }
+
             if (rotate) { ctx.restore(); }
             
             document.getElementById('sizeInfo').textContent = `尺寸: ${canvas.width} × ${canvas.height} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
