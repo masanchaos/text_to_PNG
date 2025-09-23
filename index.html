@@ -77,13 +77,12 @@
         #progressBar { width: 0%; height: 10px; background: #667eea; transition: width 0.2s ease-out; }
         #fontStatus { font-size: 0.9em; height: 20px; color: #ccc; }
 
-        /* --- 新增的樣式 --- */
         .stepper {
             display: flex;
             align-items: center;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
-            overflow: hidden; /* 確保內部元素遵循圓角 */
+            overflow: hidden; 
             margin-top: 5px;
         }
         .stepper:focus-within {
@@ -95,7 +94,6 @@
             text-align: center;
             margin: 0;
             padding: 8px 0;
-            /* 隱藏預設的數字調整箭頭 */
             -moz-appearance: textfield;
         }
         .stepper input::-webkit-outer-spin-button,
@@ -114,11 +112,11 @@
             width: 34px;
             height: 38px;
             flex-shrink: 0;
+            user-select: none; /* 防止長按時選取文字 */
         }
         .stepper-btn:hover {
             background: #dfe3ff;
         }
-        /* --- 樣式結束 --- */
     </style>
 </head>
 <body>
@@ -149,33 +147,33 @@
                     <div>
                         <label>上邊距 (Top)</label>
                         <div class="stepper">
-                            <button class="stepper-btn" onclick="adjustPadding('paddingTop', -1)">-</button>
+                            <button class="stepper-btn" onmousedown="startAdjusting('paddingTop', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingTop', -1)" ontouchend="stopAdjusting()">-</button>
                             <input type="number" id="paddingTop" value="10" max="200">
-                            <button class="stepper-btn" onclick="adjustPadding('paddingTop', 1)">+</button>
+                            <button class="stepper-btn" onmousedown="startAdjusting('paddingTop', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingTop', 1)" ontouchend="stopAdjusting()">+</button>
                         </div>
                     </div>
                     <div>
                         <label>下邊距 (Bottom)</label>
                         <div class="stepper">
-                            <button class="stepper-btn" onclick="adjustPadding('paddingBottom', -1)">-</button>
+                            <button class="stepper-btn" onmousedown="startAdjusting('paddingBottom', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingBottom', -1)" ontouchend="stopAdjusting()">-</button>
                             <input type="number" id="paddingBottom" value="10" max="200">
-                            <button class="stepper-btn" onclick="adjustPadding('paddingBottom', 1)">+</button>
+                            <button class="stepper-btn" onmousedown="startAdjusting('paddingBottom', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingBottom', 1)" ontouchend="stopAdjusting()">+</button>
                         </div>
                     </div>
                     <div>
                         <label>左邊距 (Left)</label>
                         <div class="stepper">
-                            <button class="stepper-btn" onclick="adjustPadding('paddingLeft', -1)">-</button>
+                            <button class="stepper-btn" onmousedown="startAdjusting('paddingLeft', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingLeft', -1)" ontouchend="stopAdjusting()">-</button>
                             <input type="number" id="paddingLeft" value="10" max="200">
-                            <button class="stepper-btn" onclick="adjustPadding('paddingLeft', 1)">+</button>
+                            <button class="stepper-btn" onmousedown="startAdjusting('paddingLeft', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingLeft', 1)" ontouchend="stopAdjusting()">+</button>
                         </div>
                     </div>
                     <div>
                         <label>右邊距 (Right)</label>
                         <div class="stepper">
-                            <button class="stepper-btn" onclick="adjustPadding('paddingRight', -1)">-</button>
+                            <button class="stepper-btn" onmousedown="startAdjusting('paddingRight', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingRight', -1)" ontouchend="stopAdjusting()">-</button>
                             <input type="number" id="paddingRight" value="10" max="200">
-                            <button class="stepper-btn" onclick="adjustPadding('paddingRight', 1)">+</button>
+                            <button class="stepper-btn" onmousedown="startAdjusting('paddingRight', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingRight', 1)" ontouchend="stopAdjusting()">+</button>
                         </div>
                     </div>
                 </div>
@@ -206,6 +204,11 @@
     <script>
         let templates = []; let fontMode = 'single'; let currentTemplateName = null;
         
+        // --- 新增: 用於管理長按功能的計時器變數 ---
+        let adjustTimeout = null;
+        let adjustInterval = null;
+        // ------------------------------------
+
         window.onload = async function() {
             const fontsLoaded = await loadFontsWithProgress();
             if (fontsLoaded) {
@@ -269,17 +272,36 @@
             }
         }
         
-        // --- 新增的函數 ---
+        // 單次調整邊距的函數 (保持不變)
         function adjustPadding(inputId, amount) {
             const input = document.getElementById(inputId);
             let value = parseInt(input.value, 10) || 0;
             value += amount;
             if (value < 0) value = 0; // 防止負值
             input.value = value;
-            // 手動觸發 input 事件，讓 updateCanvas 函數執行
             input.dispatchEvent(new Event('input'));
         }
-        // --- 函數結束 ---
+
+        // --- 新增: 長按開始的函數 ---
+        function startAdjusting(inputId, amount) {
+            // 先執行一次
+            adjustPadding(inputId, amount);
+
+            // 設定一個延遲，若延遲後滑鼠還按著，就開始連續觸發
+            adjustTimeout = setTimeout(() => {
+                adjustInterval = setInterval(() => {
+                    adjustPadding(inputId, amount);
+                }, 100); // 每 100 毫秒調整一次
+            }, 400); // 延遲 400 毫秒後開始
+        }
+
+        // --- 新增: 長按結束的函數 ---
+        function stopAdjusting() {
+            // 清除延遲計時器和連續觸發計時器
+            clearTimeout(adjustTimeout);
+            clearInterval(adjustInterval);
+        }
+        // -----------------------------
 
         function switchFontMode(mode, event) {
             fontMode = mode;
@@ -433,7 +455,6 @@
             const englishFont = document.getElementById('englishFont').value;
             const chineseFont = document.getElementById('chineseFont').value;
             
-            // 基礎寬度計算
             let baseWidth = 0;
             let maxAscent = 0;
             let maxDescent = 0;
@@ -468,7 +489,6 @@
             let x = paddingLeft;
             const y = paddingTop + (baseHeight / 2);
 
-            // 逐字繪製
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
@@ -479,7 +499,7 @@
 
             if (rotate) { ctx.restore(); }
             
-            document.getElementById('sizeInfo').textContent = `尺寸: ${canvas.width} × ${canvas.height} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
+            document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvas.width)} × ${Math.round(canvas.height)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
         }
 
         function downloadPNG() {
