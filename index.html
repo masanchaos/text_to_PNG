@@ -142,12 +142,10 @@
                 { name: 'Noto Sans CJK TC', url: './fonts/NotoSansCJKtc.woff2' },
                 { name: '微軟正黑體', url: './fonts/MicrosoftJhengHei.woff2' }
             ];
-
             const loadingMessage = document.getElementById('loadingMessage');
             const progressBar = document.getElementById('progressBar');
             const fontStatus = document.getElementById('fontStatus');
             let loadedCount = 0;
-
             const fontPromises = fontsToLoad.map(fontData => {
                 const fontFace = new FontFace(fontData.name, `url(${fontData.url})`);
                 return fontFace.load().then(loadedFont => {
@@ -155,11 +153,8 @@
                     loadedCount++;
                     progressBar.style.width = `${(loadedCount / fontsToLoad.length) * 100}%`;
                     fontStatus.textContent = `(${loadedCount}/${fontsToLoad.length}) ${fontData.name}`;
-                }).catch(error => {
-                    throw new Error(`字體 "${fontData.name}" 載入失敗，請檢查檔案：${fontData.url}`);
-                });
+                }).catch(error => { throw new Error(`字體 "${fontData.name}" 載入失敗，請檢查檔案：${fontData.url}`); });
             });
-
             try {
                 await Promise.all(fontPromises);
                 loadingMessage.textContent = "字體載入完成！";
@@ -304,57 +299,70 @@
             const englishFont = document.getElementById('englishFont').value;
             const chineseFont = document.getElementById('chineseFont').value;
 
-            // --- 最終版繪圖邏輯 ---
+            // --- 像素掃描演算法 ---
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
             
-            // 步驟 1: 獲取每個字元的度量訊息
-            const charMetrics = [];
-            let maxAscent = 0;
-            let maxDescent = 0;
-            if (text.length > 0) {
-                for (let i = 0; i < text.length; i++) {
-                    const char = text[i];
-                    const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
-                    ctx.font = `${fontSize}px ${font}`;
-                    const metrics = ctx.measureText(char);
-                    
-                    metrics.actualBoundingBoxAscent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
-                    metrics.actualBoundingBoxDescent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
-                    metrics.actualBoundingBoxLeft = metrics.actualBoundingBoxLeft || 0;
-                    metrics.actualBoundingBoxRight = metrics.actualBoundingBoxRight || metrics.width;
+            // 預估一個足夠大的臨時畫布
+            const tempWidth = (fontSize + Math.abs(letterSpacing)) * text.length + 200;
+            const tempHeight = fontSize * 3;
+            tempCanvas.width = tempWidth;
+            tempCanvas.height = tempHeight;
+            tempCtx.textBaseline = 'middle'; // 置中繪製以確保上下都有足夠空間
+            tempCtx.fillStyle = textColor;
 
-                    charMetrics.push(metrics);
-                    maxAscent = Math.max(maxAscent, metrics.actualBoundingBoxAscent);
-                    maxDescent = Math.max(maxDescent, metrics.actualBoundingBoxDescent);
-                }
-            }
-
-            // 步驟 2: 計算真實的視覺邊界
+            // 在臨時畫布中心繪製
             let currentX = 0;
-            let minX = Infinity;
-            let maxX = -Infinity;
-
-            if (charMetrics.length > 0) {
-                for (let i = 0; i < charMetrics.length; i++) {
-                    const metric = charMetrics[i];
-                    const charLeft = currentX - metric.actualBoundingBoxLeft;
-                    const charRight = currentX + metric.actualBoundingBoxRight;
-                    
-                    minX = Math.min(minX, charLeft);
-                    maxX = Math.max(maxX, charRight);
-                    
-                    currentX += metric.width + (i < charMetrics.length - 1 ? letterSpacing : 0);
-                }
-            } else {
-                minX = 0;
-                maxX = 0;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
+                tempCtx.font = `${fontSize}px ${font}`;
+                currentX += tempCtx.measureText(char).width + (i < text.length - 1 ? letterSpacing : 0);
             }
             
-            // 步驟 3: 設定畫布尺寸
-            const totalWidth = maxX - minX;
-            const dynamicHeight = maxAscent + maxDescent;
+            let x = (tempWidth - currentX) / 2;
+            const y = tempHeight / 2;
             
-            canvas.width = totalWidth > 0 ? Math.ceil(totalWidth) : 1;
-            canvas.height = dynamicHeight > 0 ? Math.ceil(dynamicHeight) : 1;
+            // 繪製文字
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
+                tempCtx.font = `${fontSize}px ${font}`;
+                tempCtx.fillText(char, x, y);
+                x += tempCtx.measureText(char).width + letterSpacing;
+            }
+            
+            // 掃描像素
+            const imageData = tempCtx.getImageData(0, 0, tempWidth, tempHeight);
+            const data = imageData.data;
+            let minX = tempWidth, minY = tempHeight, maxX = -1, maxY = -1;
+
+            for (let j = 0; j < tempHeight; j++) {
+                for (let i = 0; i < tempWidth; i++) {
+                    const alpha = data[(j * tempWidth + i) * 4 + 3];
+                    if (alpha > 0) {
+                        minX = Math.min(minX, i);
+                        maxX = Math.max(maxX, i);
+                        minY = Math.min(minY, j);
+                        maxY = Math.max(maxY, j);
+                    }
+                }
+            }
+
+            if (maxX === -1) { // 處理空文字的情況
+                canvas.width = 1;
+                canvas.height = 1;
+                document.getElementById('sizeInfo').textContent = `尺寸: 1 × 1 px`;
+                return;
+            }
+
+            // --- 新增功能：根據使用者要求增加安全邊距 ---
+            const safetyPadding = 2; // 上下左右各 1px
+            const trimmedWidth = (maxX - minX) + 1 + safetyPadding;
+            const trimmedHeight = (maxY - minY) + 1 + safetyPadding;
+
+            canvas.width = trimmedWidth;
+            canvas.height = trimmedHeight;
             
             if (rotate) {
                 ctx.save();
@@ -363,20 +371,18 @@
                 ctx.translate(-canvas.width / 2, -canvas.height / 2);
             }
             
-            ctx.textBaseline = 'alphabetic';
-            ctx.fillStyle = textColor;
-            
-            let x = -minX; // 從 (0,0) 開始繪製，但將整個畫布向左平移 minX 的距離
-            const yBaseline = maxAscent;
-            
-            // 步驟 4: 逐字繪製
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
-                ctx.font = `${fontSize}px ${font}`;
-                ctx.fillText(char, x, yBaseline);
-                x += charMetrics[i].width + letterSpacing;
-            }
+            // 從臨時畫布複製裁切後的區域到主畫布
+            ctx.drawImage(
+                tempCanvas, 
+                minX, // 來源 X
+                minY, // 來源 Y
+                (maxX - minX) + 1, // 來源寬度
+                (maxY - minY) + 1, // 來源高度
+                safetyPadding / 2, // 目標 X (留出左邊距)
+                safetyPadding / 2, // 目標 Y (留出上邊距)
+                (maxX - minX) + 1, // 目標寬度
+                (maxY - minY) + 1  // 目標高度
+            );
             
             if (rotate) { ctx.restore(); }
             
