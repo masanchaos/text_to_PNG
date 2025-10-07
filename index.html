@@ -182,7 +182,17 @@
                 </div>
                 <div class="info-box">📌 <strong>提示：</strong>如果字體被裁切，請試著增加邊距。</div>
             </div>
-            <div class="section"><div class="section-title">預覽</div><canvas id="canvas"></canvas><div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;" id="sizeInfo">尺寸資訊</div><div style="text-align: center; margin-top: 20px;"><button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button></div></div>
+            <div class="section">
+                <div class="section-title">預覽與下載</div>
+                <canvas id="canvas"></canvas>
+                <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;" id="sizeInfo">尺寸資訊</div>
+
+                <div style="max-width: 400px; margin: 20px auto 0 auto;">
+                    <label for="shippingNumberInput" style="display: block; text-align: left; margin-bottom: 5px; font-weight: bold; color: #333;">寄件編號 (檔名前綴)</label>
+                    <input type="text" id="shippingNumberInput" placeholder="選填，將作為下載檔名的開頭">
+                </div>
+                <div style="text-align: center; margin-top: 20px;"><button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button></div>
+            </div>
         </div>
     </div>
     <div id="templateModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal()">&times;</span><h2 style="margin-bottom: 20px;">📝 模板設定</h2><input type="hidden" id="editIndex" value="-1"><div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div><div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
@@ -202,12 +212,14 @@
             <div style="margin-bottom: 15px;"><input type="checkbox" id="templateRotate"><label for="templateRotate">旋轉180度</label></div><div style="margin-bottom: 15px;"><label>描述（選填）</label><input type="text" id="templateDesc" placeholder="例如：適用於主標題"></div><div style="margin-top: 20px;"><button class="btn btn-primary" onclick="saveTemplate()">儲存模板</button><button class="btn btn-secondary" onclick="closeModal()" style="margin-left: 10px;">取消</button></div></div></div>
 
     <script>
-        let templates = []; let fontMode = 'single'; let currentTemplateName = null;
-        
-        // --- 新增: 用於管理長按功能的計時器變數 ---
+        // --- 全域變數 ---
+        let templates = []; // 用於顯示和操作的合併後模板列表
+        let defaultTemplatesFromFile = []; // 專門存放從 templates.json 讀取的預設模板
+        let fontMode = 'single';
+        let currentTemplateName = null;
         let adjustTimeout = null;
         let adjustInterval = null;
-        // ------------------------------------
+        // ----------------
 
         window.onload = async function() {
             const fontsLoaded = await loadFontsWithProgress();
@@ -272,36 +284,27 @@
             }
         }
         
-        // 單次調整邊距的函數 (保持不變)
         function adjustPadding(inputId, amount) {
             const input = document.getElementById(inputId);
             let value = parseInt(input.value, 10) || 0;
             value += amount;
-            //if (value < 0) value = 0; // 防止負值
             input.value = value;
             input.dispatchEvent(new Event('input'));
         }
 
-        // --- 新增: 長按開始的函數 ---
         function startAdjusting(inputId, amount) {
-            // 先執行一次
             adjustPadding(inputId, amount);
-
-            // 設定一個延遲，若延遲後滑鼠還按著，就開始連續觸發
             adjustTimeout = setTimeout(() => {
                 adjustInterval = setInterval(() => {
                     adjustPadding(inputId, amount);
-                }, 100); // 每 100 毫秒調整一次
-            }, 400); // 延遲 400 毫秒後開始
+                }, 100);
+            }, 400);
         }
 
-        // --- 新增: 長按結束的函數 ---
         function stopAdjusting() {
-            // 清除延遲計時器和連續觸發計時器
             clearTimeout(adjustTimeout);
             clearInterval(adjustInterval);
         }
-        // -----------------------------
 
         function switchFontMode(mode, event) {
             fontMode = mode;
@@ -314,26 +317,42 @@
         function isChinese(char) { const code = char.charCodeAt(0); return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF) || (code >= 0x3000 && code <= 0x303F) || (code >= 0xFF00 && code <= 0xFFEF) || (code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF) || (code >= 0xAC00 && code <= 0xD7AF); }
         
         async function loadTemplates() {
+            try {
+                const response = await fetch('./templates.json');
+                if (response.ok) {
+                    const jsonTemplates = await response.json();
+                    if (Array.isArray(jsonTemplates)) {
+                        defaultTemplatesFromFile = jsonTemplates;
+                    }
+                }
+            } catch (error) {
+                console.log("讀取預設 templates.json 失敗:", error);
+            }
+            let userTemplates = [];
             const saved = localStorage.getItem('pngTemplates');
             if (saved) {
-                templates = JSON.parse(saved);
-            } else {
                 try {
-                    const response = await fetch('./templates.json');
-                    if (response.ok) {
-                        const rootTemplates = await response.json();
-                        if (Array.isArray(rootTemplates) && rootTemplates.length > 0) { templates = rootTemplates; }
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed)) {
+                        userTemplates = parsed;
                     }
-                } catch (error) { console.log("讀取 templates.json 失敗:", error); }
+                } catch (error) {
+                    console.error("解析 localStorage 模板失敗:", error);
+                }
             }
-            if(templates.length === 0) {
-                 templates = [{ name: '標準模板', fontSize: 42.34, letterSpacing: 15, paddingTop: 10, paddingBottom: 10, paddingLeft: 20, paddingRight: 20, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' }];
+            templates = [...defaultTemplatesFromFile, ...userTemplates];
+            if (templates.length === 0) {
+                templates.push({ name: '標準模板', fontSize: 42.34, letterSpacing: 15, paddingTop: 10, paddingBottom: 10, paddingLeft: 20, paddingRight: 20, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' });
             }
-            saveTemplatesLocal();
             renderTemplates();
         }
 
-        function saveTemplatesLocal() { localStorage.setItem('pngTemplates', JSON.stringify(templates)); }
+        function saveTemplatesLocal() {
+            const defaultTemplatesSet = new Set(defaultTemplatesFromFile.map(t => JSON.stringify(t)));
+            const userTemplatesToSave = templates.filter(t => !defaultTemplatesSet.has(JSON.stringify(t)));
+            localStorage.setItem('pngTemplates', JSON.stringify(userTemplatesToSave));
+        }
+        
         function renderTemplates() {
             const grid = document.getElementById('templateGrid');
             grid.innerHTML = `<div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>`;
@@ -502,24 +521,30 @@
             document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvas.width)} × ${Math.round(canvas.height)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
         }
 
+        // ========== 函數已修改 (檔名產生邏輯) ==========
         function downloadPNG() {
             const text = document.getElementById('textInput').value;
             if (text.length > 22) { alert('文字超過22個字元，無法下載！'); return; }
             if (text.length === 0) { alert('請輸入文字後再下載！'); return; }
+            
+            // 獲取新增的寄件編號
+            const shippingNumber = document.getElementById('shippingNumberInput').value.trim();
+
             const canvas = document.getElementById('canvas');
             const date = new Date();
-            const dateStr = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
-            const timeStr = `${String(date.getHours()).padStart(2,'0')}${String(date.getMinutes()).padStart(2,'0')}`;
+
+            // 建立包含秒的日期時間字串
+            const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+            const timeStr = `${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
+            const timestamp = `${dateStr}${timeStr}`;
+
             const safeText = text.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_').substring(0, 15);
-            let filename;
-            if (currentTemplateName) {
-                filename = `${currentTemplateName}_${safeText}_${dateStr}_${timeStr}.png`;
-            } else {
-                const fontSize = document.getElementById('fontSize').value;
-                const letterSpacing = document.getElementById('letterSpacing').value;
-                const rotate = document.getElementById('rotate180').checked ? '_R180' : '';
-                filename = `${safeText}_${fontSize}px_S${letterSpacing}${rotate}_${dateStr}_${timeStr}.png`;
-            }
+            
+            // 產生新的檔名
+            // 格式: [寄件編號_]輸入文字_時間.png
+            const filenamePrefix = shippingNumber ? `${shippingNumber}_` : '';
+            const filename = `${filenamePrefix}${safeText}_${timestamp}.png`;
+            
             const link = document.createElement('a');
             link.download = filename;
             link.href = canvas.toDataURL("image/png");
@@ -529,4 +554,3 @@
     </script>
 </body>
 </html>
-
