@@ -50,7 +50,31 @@
         .char-counter.error { color: #ff5252; font-weight: bold; }
         .checkbox-group { display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-top: 10px; }
         input[type="checkbox"] { width: auto; margin-right: 8px; }
-        #canvas { border: 2px solid #e0e0e0; border-radius: 8px; max-width: 100%; display: block; margin: 20px auto; background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+        
+        #canvasWrapper {
+            position: relative;
+            margin: 20px auto 50px auto; /* 增加底部 margin 給放大後的空間 */
+            max-width: 100%;
+            display: inline-block;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            /* ========== START: 放大 30% ========== */
+            transform: scale(1.3);
+            transform-origin: center;
+            /* ========== END: 放大 30% ========== */
+        }
+        #textCanvas, #guideCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: block;
+        }
+        #textCanvas { z-index: 1; }
+        #guideCanvas { z-index: 2; pointer-events: none; }
+        
         .font-mode-toggle { display: flex; gap: 10px; margin-bottom: 15px; }
         .font-mode-btn { flex: 1; padding: 10px; border: 2px solid #e0e0e0; background: white; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
         .font-mode-btn.active { background: #667eea; color: white; border-color: #667eea; }
@@ -77,46 +101,12 @@
         #progressBar { width: 0%; height: 10px; background: #667eea; transition: width 0.2s ease-out; }
         #fontStatus { font-size: 0.9em; height: 20px; color: #ccc; }
 
-        .stepper {
-            display: flex;
-            align-items: center;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            overflow: hidden; 
-            margin-top: 5px;
-        }
-        .stepper:focus-within {
-            border-color: #667eea;
-        }
-        .stepper input {
-            width: 100%;
-            border: none;
-            text-align: center;
-            margin: 0;
-            padding: 8px 0;
-            -moz-appearance: textfield;
-        }
-        .stepper input::-webkit-outer-spin-button,
-        .stepper input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        .stepper-btn {
-            background: #f0f2ff;
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
-            color: #667eea;
-            font-weight: bold;
-            transition: background 0.2s;
-            width: 34px;
-            height: 38px;
-            flex-shrink: 0;
-            user-select: none; /* 防止長按時選取文字 */
-        }
-        .stepper-btn:hover {
-            background: #dfe3ff;
-        }
+        .stepper { display: flex; align-items: center; border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; margin-top: 5px; }
+        .stepper:focus-within { border-color: #667eea; }
+        .stepper input { width: 100%; border: none; text-align: center; margin: 0; padding: 8px 0; -moz-appearance: textfield; }
+        .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .stepper-btn { background: #f0f2ff; border: none; cursor: pointer; font-size: 18px; color: #667eea; font-weight: bold; transition: background 0.2s; width: 34px; height: 38px; flex-shrink: 0; user-select: none; }
+        .stepper-btn:hover { background: #dfe3ff; }
     </style>
 </head>
 <body>
@@ -142,6 +132,10 @@
                     <div><label>字級 (px)</label><input type="number" id="fontSize" value="42.34" min="8" max="200" step="0.01"></div>
                     <div><label>字距 (px)</label><input type="number" id="letterSpacing" value="15" min="-10" max="500"></div>
                     <div><label>文字顏色</label><input type="color" id="textColor" value="#000000" style="padding: 5px; height: 42px;"></div>
+                </div>
+                <div class="grid-2" style="margin-bottom: 15px; border-top: 1px solid #e0e0e0; padding-top: 15px;">
+                    <div><label>中文 Y 軸偏移 (px)</label><input type="number" id="chineseYOffset" value="0" step="0.5"></div>
+                    <div><label>英文 Y 軸偏移 (px)</label><input type="number" id="englishYOffset" value="0" step="0.5"></div>
                 </div>
                 <div class="grid-4">
                     <div>
@@ -179,12 +173,15 @@
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
+                    <input type="checkbox" id="showAlignmentGuides" style="margin-left: 20px;" checked><label for="showAlignmentGuides">顯示對齊輔助線</label>
                 </div>
-                <div class="info-box">📌 <strong>提示：</strong>如果字體被裁切，請試著增加邊距。</div>
+                <div class="info-box">📌 <strong>提示：</strong>如果字體被裁切，請試著增加邊距。輔助線可協助對齊中英文字。</div>
             </div>
-            <div class="section">
-                <div class="section-title">預覽與下載</div>
-                <canvas id="canvas"></canvas>
+            <div class="section" style="text-align: center;"> <div class="section-title" style="text-align: left;">預覽與下載</div>
+                <div id="canvasWrapper">
+                    <canvas id="textCanvas"></canvas>
+                    <canvas id="guideCanvas"></canvas>
+                </div>
                 <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;" id="sizeInfo">尺寸資訊</div>
 
                 <div style="max-width: 400px; margin: 20px auto 0 auto;">
@@ -213,14 +210,14 @@
 
     <script>
         // --- 全域變數 ---
-        let templates = []; // 用於顯示和操作的合併後模板列表
-        let defaultTemplatesFromFile = []; // 專門存放從 templates.json 讀取的預設模板
+        let templates = [];
+        let defaultTemplatesFromFile = [];
         let fontMode = 'single';
         let currentTemplateName = null;
         let adjustTimeout = null;
         let adjustInterval = null;
-        // ----------------
-
+        
+        // --- 初始化 ---
         window.onload = async function() {
             const fontsLoaded = await loadFontsWithProgress();
             if (fontsLoaded) {
@@ -233,24 +230,23 @@
             const loadingOverlay = document.getElementById('loadingOverlay');
             loadingOverlay.style.opacity = 0;
             setTimeout(() => loadingOverlay.style.display = 'none', 300);
-            document.body.style.fontFamily = "'Noto Sans CJK TC', '微軟正黑體', sans-serif";
-            updateCanvas();
+            
             checkCharCount();
             
-            document.getElementById('textInput').addEventListener('input', () => { checkCharCount(); updateCanvas(); });
-            document.getElementById('fontSize').addEventListener('input', updateCanvas);
-            document.getElementById('letterSpacing').addEventListener('input', updateCanvas);
-            document.getElementById('textColor').addEventListener('input', updateCanvas);
-            document.getElementById('paddingTop').addEventListener('input', updateCanvas);
-            document.getElementById('paddingBottom').addEventListener('input', updateCanvas);
-            document.getElementById('paddingLeft').addEventListener('input', updateCanvas);
-            document.getElementById('paddingRight').addEventListener('input', updateCanvas);
-            document.getElementById('fontFamily').addEventListener('change', updateCanvas);
-            document.getElementById('englishFont').addEventListener('change', updateCanvas);
-            document.getElementById('chineseFont').addEventListener('change', updateCanvas);
-            document.getElementById('rotate180').addEventListener('change', updateCanvas);
+            const inputs = ['textInput', 'fontSize', 'letterSpacing', 'textColor', 'paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'fontFamily', 'englishFont', 'chineseFont', 'rotate180', 'chineseYOffset', 'englishYOffset', 'showAlignmentGuides'];
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                const event = (element.type === 'checkbox' || element.tagName === 'SELECT') ? 'change' : 'input';
+                element.addEventListener(event, () => {
+                    if (id === 'textInput') checkCharCount();
+                    updateCanvas();
+                });
+            });
+
+            updateCanvas();
         }
 
+        // --- 字體載入 ---
         async function loadFontsWithProgress() {
             const fontsToLoad = [
                 { name: 'Rage Italic', url: './fonts/RageItalic.woff2' },
@@ -284,183 +280,47 @@
             }
         }
         
-        function adjustPadding(inputId, amount) {
-            const input = document.getElementById(inputId);
-            let value = parseInt(input.value, 10) || 0;
-            value += amount;
-            input.value = value;
-            input.dispatchEvent(new Event('input'));
-        }
-
-        function startAdjusting(inputId, amount) {
-            adjustPadding(inputId, amount);
-            adjustTimeout = setTimeout(() => {
-                adjustInterval = setInterval(() => {
-                    adjustPadding(inputId, amount);
-                }, 100);
-            }, 400);
-        }
-
-        function stopAdjusting() {
-            clearTimeout(adjustTimeout);
-            clearInterval(adjustInterval);
-        }
-
-        function switchFontMode(mode, event) {
-            fontMode = mode;
-            document.querySelectorAll('.font-mode-btn').forEach(btn => btn.classList.remove('active'));
-            if (event) event.target.classList.add('active');
-            document.getElementById('singleFontSettings').classList.toggle('active', mode === 'single');
-            document.getElementById('dualFontSettings').classList.toggle('active', mode === 'dual');
-            updateCanvas();
-        }
+        // --- 輔助函數 ---
+        function adjustPadding(inputId, amount) { const input = document.getElementById(inputId); let value = parseInt(input.value, 10) || 0; value += amount; input.value = value; input.dispatchEvent(new Event('input')); }
+        function startAdjusting(inputId, amount) { adjustPadding(inputId, amount); adjustTimeout = setTimeout(() => { adjustInterval = setInterval(() => { adjustPadding(inputId, amount); }, 100); }, 400); }
+        function stopAdjusting() { clearTimeout(adjustTimeout); clearInterval(adjustInterval); }
+        function switchFontMode(mode, event) { fontMode = mode; document.querySelectorAll('.font-mode-btn').forEach(btn => btn.classList.remove('active')); if (event) event.target.classList.add('active'); document.getElementById('singleFontSettings').classList.toggle('active', mode === 'single'); document.getElementById('dualFontSettings').classList.toggle('active', mode === 'dual'); updateCanvas(); }
         function isChinese(char) { const code = char.charCodeAt(0); return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF) || (code >= 0x3000 && code <= 0x303F) || (code >= 0xFF00 && code <= 0xFFEF) || (code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF) || (code >= 0xAC00 && code <= 0xD7AF); }
-        
-        async function loadTemplates() {
-            try {
-                const response = await fetch('./templates.json');
-                if (response.ok) {
-                    const jsonTemplates = await response.json();
-                    if (Array.isArray(jsonTemplates)) {
-                        defaultTemplatesFromFile = jsonTemplates;
-                    }
-                }
-            } catch (error) {
-                console.log("讀取預設 templates.json 失敗:", error);
-            }
-            let userTemplates = [];
-            const saved = localStorage.getItem('pngTemplates');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    if (Array.isArray(parsed)) {
-                        userTemplates = parsed;
-                    }
-                } catch (error) {
-                    console.error("解析 localStorage 模板失敗:", error);
-                }
-            }
-            templates = [...defaultTemplatesFromFile, ...userTemplates];
-            if (templates.length === 0) {
-                templates.push({ name: '標準模板', fontSize: 42.34, letterSpacing: 15, paddingTop: 10, paddingBottom: 10, paddingLeft: 20, paddingRight: 20, fontMode: 'single', singleFont: "'Noto Sans CJK TC', sans-serif", textColor: '#000000', rotate: false, desc: '預設標準模板' });
-            }
-            renderTemplates();
-        }
-
-        function saveTemplatesLocal() {
-            const defaultTemplatesSet = new Set(defaultTemplatesFromFile.map(t => JSON.stringify(t)));
-            const userTemplatesToSave = templates.filter(t => !defaultTemplatesSet.has(JSON.stringify(t)));
-            localStorage.setItem('pngTemplates', JSON.stringify(userTemplatesToSave));
-        }
-        
-        function renderTemplates() {
-            const grid = document.getElementById('templateGrid');
-            grid.innerHTML = `<div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>`;
-            templates.forEach((template, index) => {
-                const card = document.createElement('div');
-                card.className = 'template-card';
-                if (template.name === currentTemplateName) card.classList.add('active');
-                card.innerHTML = `<button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button><button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button><div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div><div style="font-size: 12px; color: #666;">${template.fontSize}px | 字距${template.letterSpacing}px<br>${template.fontMode === 'dual' ? '中英分離' : '統一字體'}${template.rotate ? '<br>旋轉180°' : ''}${template.desc ? '<br>' + template.desc : ''}</div>`;
-                card.onclick = () => applyTemplate(template);
-                grid.appendChild(card);
-            });
-        }
-        function openTemplateModal() {
-            document.getElementById('templateModal').style.display = 'block';
-            document.getElementById('editIndex').value = '-1';
-            document.getElementById('templateName').value = '';
-            document.getElementById('templateFontSize').value = document.getElementById('fontSize').value;
-            document.getElementById('templateLetterSpacing').value = document.getElementById('letterSpacing').value;
-            document.getElementById('templatePaddingTop').value = document.getElementById('paddingTop').value;
-            document.getElementById('templatePaddingBottom').value = document.getElementById('paddingBottom').value;
-            document.getElementById('templatePaddingLeft').value = document.getElementById('paddingLeft').value;
-            document.getElementById('templatePaddingRight').value = document.getElementById('paddingRight').value;
-            document.getElementById('templateFontMode').value = fontMode;
-            document.getElementById('templateSingleFont').value = document.getElementById('fontFamily').value;
-            document.getElementById('templateEnglishFont').value = document.getElementById('englishFont').value;
-            document.getElementById('templateChineseFont').value = document.getElementById('chineseFont').value;
-            document.getElementById('templateTextColor').value = document.getElementById('textColor').value;
-            document.getElementById('templateRotate').checked = document.getElementById('rotate180').checked;
-            document.getElementById('templateDesc').value = '';
-        }
-        function closeModal() { document.getElementById('templateModal').style.display = 'none'; }
-        function saveTemplate() {
-            const name = document.getElementById('templateName').value.trim();
-            if (!name) { alert('請輸入模板名稱'); return; }
-            const template = {
-                name: name,
-                fontSize: parseFloat(document.getElementById('templateFontSize').value),
-                letterSpacing: parseInt(document.getElementById('templateLetterSpacing').value),
-                paddingTop: parseInt(document.getElementById('templatePaddingTop').value),
-                paddingBottom: parseInt(document.getElementById('templatePaddingBottom').value),
-                paddingLeft: parseInt(document.getElementById('templatePaddingLeft').value),
-                paddingRight: parseInt(document.getElementById('templatePaddingRight').value),
-                fontMode: document.getElementById('templateFontMode').value,
-                singleFont: document.getElementById('templateSingleFont').value,
-                englishFont: document.getElementById('templateEnglishFont').value,
-                chineseFont: document.getElementById('templateChineseFont').value,
-                textColor: document.getElementById('templateTextColor').value,
-                rotate: document.getElementById('templateRotate').checked,
-                desc: document.getElementById('templateDesc').value.trim()
-            };
-            const editIndex = parseInt(document.getElementById('editIndex').value);
-            if (editIndex >= 0) { templates[editIndex] = template; } else { templates.push(template); }
-            saveTemplatesLocal(); renderTemplates(); closeModal(); alert('模板已儲存！');
-        }
-        function editTemplate(index) {
-            const template = templates[index];
-            document.getElementById('templateModal').style.display = 'block';
-            document.getElementById('editIndex').value = index;
-            document.getElementById('templateName').value = template.name;
-            document.getElementById('templateFontSize').value = template.fontSize;
-            document.getElementById('templateLetterSpacing').value = template.letterSpacing;
-            document.getElementById('templatePaddingTop').value = template.paddingTop || template.paddingY || 10;
-            document.getElementById('templatePaddingBottom').value = template.paddingBottom || template.paddingY || 10;
-            document.getElementById('templatePaddingLeft').value = template.paddingLeft || template.paddingX || 20;
-            document.getElementById('templatePaddingRight').value = template.paddingRight || template.paddingX || 20;
-            document.getElementById('templateFontMode').value = template.fontMode || 'single';
-            document.getElementById('templateSingleFont').value = template.singleFont || "'Noto Sans CJK TC', sans-serif";
-            document.getElementById('templateEnglishFont').value = template.englishFont || "'Avenir Next Condensed', sans-serif";
-            document.getElementById('templateChineseFont').value = template.chineseFont || "'Noto Sans CJK TC', sans-serif";
-            document.getElementById('templateTextColor').value = template.textColor || '#000000';
-            document.getElementById('templateRotate').checked = template.rotate || false;
-            document.getElementById('templateDesc').value = template.desc || '';
-        }
-        function deleteTemplate(index) { if (confirm('確定要刪除這個模板嗎？')) { templates.splice(index, 1); saveTemplatesLocal(); renderTemplates(); } }
-        function applyTemplate(template) {
-            if (currentTemplateName === template.name) { currentTemplateName = null; document.getElementById('currentTemplate').textContent = '無'; renderTemplates(); alert('已取消選擇模板'); return; }
-            document.getElementById('fontSize').value = template.fontSize;
-            document.getElementById('letterSpacing').value = template.letterSpacing;
-            document.getElementById('paddingTop').value = template.paddingTop || template.paddingY || 10;
-            document.getElementById('paddingBottom').value = template.paddingBottom || template.paddingY || 10;
-            document.getElementById('paddingLeft').value = template.paddingLeft || template.paddingX || 20;
-            document.getElementById('paddingRight').value = template.paddingRight || template.paddingX || 20;
-            document.getElementById('textColor').value = template.textColor || '#000000';
-            document.getElementById('rotate180').checked = template.rotate || false;
-            const fontModeToApply = template.fontMode || 'single';
-            const modeButtonIndex = fontModeToApply === 'dual' ? 1 : 0;
-            document.querySelectorAll('.font-mode-btn')[modeButtonIndex].click();
-            if (fontModeToApply === 'dual') {
-                document.getElementById('englishFont').value = template.englishFont || "'Avenir Next Condensed', sans-serif";
-                document.getElementById('chineseFont').value = template.chineseFont || "'Noto Sans CJK TC', sans-serif";
-            } else {
-                document.getElementById('fontFamily').value = template.singleFont || "'Noto Sans CJK TC', sans-serif";
-            }
-            currentTemplateName = template.name;
-            document.getElementById('currentTemplate').textContent = template.name;
-            renderTemplates();
-            updateCanvas();
-            alert(`已套用模板：${template.name}`);
-        }
-        function exportTemplates() { if (templates.length === 0) { alert('沒有可匯出的模板'); return; } const dataStr = JSON.stringify(templates, null, 2); const dataBlob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(dataBlob); const link = document.createElement('a'); link.href = url; link.download = `templates-${Date.now()}.json`; link.click(); URL.revokeObjectURL(url); }
-        function importTemplates(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const imported = JSON.parse(e.target.result); if (Array.isArray(imported)) { templates = templates.concat(imported); saveTemplatesLocal(); renderTemplates(); alert('模板匯入成功！'); } else { alert('匯入失敗：檔案格式無效'); } } catch (error) { alert('匯入失敗：檔案格式錯誤'); } }; reader.readAsText(file); event.target.value = ''; }
+        function hasChinese(text) { for (let i = 0; i < text.length; i++) { if (isChinese(text[i])) return true; } return false; }
+        function hasNonChinese(text) { for (let i = 0; i < text.length; i++) { if (!isChinese(text[i])) return true; } return false; }
         function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); const downloadBtn = document.getElementById('downloadBtn'); counter.textContent = `${count} / 22`; if (count > 22) { counter.className = 'char-counter error'; downloadBtn.disabled = true; } else { counter.className = 'char-counter'; downloadBtn.disabled = false; } }
+
+        // --- 模板相關函數 (完整版) ---
+        async function loadTemplates(){try{const response=await fetch("./templates.json");if(response.ok){const jsonTemplates=await response.json();if(Array.isArray(jsonTemplates)){defaultTemplatesFromFile=jsonTemplates}}}catch(error){console.log("讀取預設 templates.json 失敗:",error)}
+        let userTemplates=[];const saved=localStorage.getItem("pngTemplates");if(saved){try{const parsed=JSON.parse(saved);if(Array.isArray(parsed)){userTemplates=parsed}}catch(error){console.error("解析 localStorage 模板失敗:",error)}}
+        templates=[...defaultTemplatesFromFile,...userTemplates];if(templates.length===0){templates.push({name:"標準模板",fontSize:42.34,letterSpacing:15,paddingTop:10,paddingBottom:10,paddingLeft:20,paddingRight:20,fontMode:"single",singleFont:"'Noto Sans CJK TC', sans-serif",textColor:"#000000",rotate:false,desc:"預設標準模板"})}
+        renderTemplates()}
+        function saveTemplatesLocal(){const defaultTemplatesSet=new Set(defaultTemplatesFromFile.map(t=>JSON.stringify(t)));const userTemplatesToSave=templates.filter(t=>!defaultTemplatesSet.has(JSON.stringify(t)));localStorage.setItem("pngTemplates",JSON.stringify(userTemplatesToSave))}
+        function renderTemplates(){const grid=document.getElementById("templateGrid");grid.innerHTML=`<div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>`;templates.forEach((template,index)=>{const card=document.createElement("div");card.className="template-card";if(template.name===currentTemplateName)card.classList.add("active");card.innerHTML=`<button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button><button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button><div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div><div style="font-size: 12px; color: #666;">${template.fontSize}px | 字距${template.letterSpacing}px<br>${template.fontMode==="dual"?"中英分離":"統一字體"}${template.rotate?"<br>旋轉180°":""}${template.desc?"<br>"+template.desc:""}</div>`;card.onclick=()=>applyTemplate(template);grid.appendChild(card)})}
+        function openTemplateModal(){document.getElementById("templateModal").style.display="block";document.getElementById("editIndex").value="-1";document.getElementById("templateName").value="";document.getElementById("templateFontSize").value=document.getElementById("fontSize").value;document.getElementById("templateLetterSpacing").value=document.getElementById("letterSpacing").value;document.getElementById("templatePaddingTop").value=document.getElementById("paddingTop").value;document.getElementById("templatePaddingBottom").value=document.getElementById("paddingBottom").value;document.getElementById("templatePaddingLeft").value=document.getElementById("paddingLeft").value;document.getElementById("templatePaddingRight").value=document.getElementById("paddingRight").value;document.getElementById("templateFontMode").value=fontMode;document.getElementById("templateSingleFont").value=document.getElementById("fontFamily").value;document.getElementById("templateEnglishFont").value=document.getElementById("englishFont").value;document.getElementById("templateChineseFont").value=document.getElementById("chineseFont").value;document.getElementById("templateTextColor").value=document.getElementById("textColor").value;document.getElementById("templateRotate").checked=document.getElementById("rotate180").checked;document.getElementById("templateDesc").value=""}
+        function closeModal(){document.getElementById("templateModal").style.display="none"}
+        function saveTemplate(){const name=document.getElementById("templateName").value.trim();if(!name){alert("請輸入模板名稱");return}
+        const template={name:name,fontSize:parseFloat(document.getElementById("templateFontSize").value),letterSpacing:parseInt(document.getElementById("templateLetterSpacing").value),paddingTop:parseInt(document.getElementById("templatePaddingTop").value),paddingBottom:parseInt(document.getElementById("templatePaddingBottom").value),paddingLeft:parseInt(document.getElementById("templatePaddingLeft").value),paddingRight:parseInt(document.getElementById("templatePaddingRight").value),fontMode:document.getElementById("templateFontMode").value,singleFont:document.getElementById("templateSingleFont").value,englishFont:document.getElementById("templateEnglishFont").value,chineseFont:document.getElementById("templateChineseFont").value,textColor:document.getElementById("templateTextColor").value,rotate:document.getElementById("templateRotate").checked,desc:document.getElementById("templateDesc").value.trim()};const editIndex=parseInt(document.getElementById("editIndex").value);if(editIndex>=0){templates[editIndex]=template}else{templates.push(template)}
+        saveTemplatesLocal();renderTemplates();closeModal();alert("模板已儲存！")}
+        function editTemplate(index){const template=templates[index];document.getElementById("templateModal").style.display="block";document.getElementById("editIndex").value=index;document.getElementById("templateName").value=template.name;document.getElementById("templateFontSize").value=template.fontSize;document.getElementById("templateLetterSpacing").value=template.letterSpacing;document.getElementById("templatePaddingTop").value=template.paddingTop||template.paddingY||10;document.getElementById("templatePaddingBottom").value=template.paddingBottom||template.paddingY||10;document.getElementById("templatePaddingLeft").value=template.paddingLeft||template.paddingX||20;document.getElementById("templatePaddingRight").value=template.paddingRight||template.paddingX||20;document.getElementById("templateFontMode").value=template.fontMode||"single";document.getElementById("templateSingleFont").value=template.singleFont||"'Noto Sans CJK TC', sans-serif";document.getElementById("templateEnglishFont").value=template.englishFont||"'Avenir Next Condensed', sans-serif";document.getElementById("templateChineseFont").value=template.chineseFont||"'Noto Sans CJK TC', sans-serif";document.getElementById("templateTextColor").value=template.textColor||"#000000";document.getElementById("templateRotate").checked=template.rotate||false;document.getElementById("templateDesc").value=template.desc||""}
+        function deleteTemplate(index){if(confirm("確定要刪除這個模板嗎？")){templates.splice(index,1);saveTemplatesLocal();renderTemplates()}}
+        function applyTemplate(template){if(currentTemplateName===template.name){currentTemplateName=null;document.getElementById("currentTemplate").textContent="無";renderTemplates();alert("已取消選擇模板");return}
+        document.getElementById("fontSize").value=template.fontSize;document.getElementById("letterSpacing").value=template.letterSpacing;document.getElementById("paddingTop").value=template.paddingTop||template.paddingY||10;document.getElementById("paddingBottom").value=template.paddingBottom||template.paddingY||10;document.getElementById("paddingLeft").value=template.paddingLeft||template.paddingX||20;document.getElementById("paddingRight").value=template.paddingRight||template.paddingX||20;document.getElementById("textColor").value=template.textColor||"#000000";document.getElementById("rotate180").checked=template.rotate||false;document.getElementById("chineseYOffset").value=template.chineseYOffset||0;document.getElementById("englishYOffset").value=template.englishYOffset||0;const fontModeToApply=template.fontMode||"single";const modeButtonIndex=fontModeToApply==="dual"?1:0;document.querySelectorAll(".font-mode-btn")[modeButtonIndex].click();if(fontModeToApply==="dual"){document.getElementById("englishFont").value=template.englishFont||"'Avenir Next Condensed', sans-serif";document.getElementById("chineseFont").value=template.chineseFont||"'Noto Sans CJK TC', sans-serif"}else{document.getElementById("fontFamily").value=template.singleFont||"'Noto Sans CJK TC', sans-serif"}
+        currentTemplateName=template.name;document.getElementById("currentTemplate").textContent=template.name;renderTemplates();updateCanvas();alert(`已套用模板：${template.name}`)}
+        function exportTemplates(){if(templates.length===0){alert("沒有可匯出的模板");return}
+        const dataStr=JSON.stringify(templates,null,2);const dataBlob=new Blob([dataStr],{type:"application/json"});const url=URL.createObjectURL(dataBlob);const link=document.createElement("a");link.href=url;link.download=`templates-${Date.now()}.json`;link.click();URL.revokeObjectURL(url)}
+        function importTemplates(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader;reader.onload=function(e){try{const imported=JSON.parse(e.target.result);if(Array.isArray(imported)){templates=templates.concat(imported);saveTemplatesLocal();renderTemplates();alert("模板匯入成功！")}else{alert("匯入失敗：檔案格式無效")}}catch(error){alert("匯入失敗：檔案格式錯誤")}};reader.readAsText(file);event.target.value=""}
         
+        // --- Canvas 核心繪圖函數 ---
         async function updateCanvas() {
             await document.fonts.ready;
 
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
+            const textCanvas = document.getElementById('textCanvas');
+            const guideCanvas = document.getElementById('guideCanvas');
+            const wrapper = document.getElementById('canvasWrapper');
+            const ctx = textCanvas.getContext('2d');
+            const guideCtx = guideCanvas.getContext('2d');
+
             const text = document.getElementById('textInput').value || 'Hello, World';
             const fontSize = parseFloat(document.getElementById('fontSize').value);
             const letterSpacing = parseInt(document.getElementById('letterSpacing').value);
@@ -473,84 +333,137 @@
             const singleFont = document.getElementById('fontFamily').value;
             const englishFont = document.getElementById('englishFont').value;
             const chineseFont = document.getElementById('chineseFont').value;
-            
-            let baseWidth = 0;
-            let maxAscent = 0;
-            let maxDescent = 0;
+            const chineseYOffset = parseFloat(document.getElementById('chineseYOffset').value) || 0;
+            const englishYOffset = parseFloat(document.getElementById('englishYOffset').value) || 0;
+            const showGuides = document.getElementById('showAlignmentGuides').checked;
+
+            const tempCtx = document.createElement('canvas').getContext('2d');
+            let coreWidth = 0;
+            let maxRawAscent = 0;
+            let maxRawDescent = 0;
+
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
-                const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
-                ctx.font = `${fontSize}px ${font}`;
-                const metrics = ctx.measureText(char);
-                baseWidth += metrics.width;
-                maxAscent = Math.max(maxAscent, metrics.actualBoundingBoxAscent || fontSize * 0.8);
-                maxDescent = Math.max(maxDescent, metrics.actualBoundingBoxDescent || fontSize * 0.2);
+                const isCharChinese = isChinese(char);
+                const font = fontMode === 'dual' ? (isCharChinese ? chineseFont : englishFont) : singleFont;
+                tempCtx.font = `${fontSize}px ${font}`;
+                const metrics = tempCtx.measureText(char);
+                coreWidth += metrics.width;
+                maxRawAscent = Math.max(maxRawAscent, metrics.actualBoundingBoxAscent || fontSize * 0.8);
+                maxRawDescent = Math.max(maxRawDescent, metrics.actualBoundingBoxDescent || fontSize * 0.2);
             }
-            if(text.length > 1) {
-                baseWidth += letterSpacing * (text.length - 1);
+            if (text.length > 1) {
+                coreWidth += letterSpacing * (text.length - 1);
             }
+            const coreHeight = maxRawAscent + maxRawDescent;
 
-            const baseHeight = maxAscent + maxDescent;
+            const canvasWidth = coreWidth + paddingLeft + paddingRight;
+            const canvasHeight = coreHeight + paddingTop + paddingBottom;
+            
+            [textCanvas, guideCanvas].forEach(c => {
+                c.width = canvasWidth;
+                c.height = canvasHeight;
+            });
+            wrapper.style.width = `${canvasWidth}px`;
+            wrapper.style.height = `${canvasHeight}px`;
 
-            canvas.width = baseWidth + paddingLeft + paddingRight;
-            canvas.height = baseHeight + paddingTop + paddingBottom;
+            ctx.textBaseline = 'alphabetic';
+            guideCtx.textBaseline = 'alphabetic';
 
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
             if (rotate) {
                 ctx.save();
-                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.translate(canvasWidth / 2, canvasHeight / 2);
                 ctx.rotate(Math.PI);
-                ctx.translate(-canvas.width / 2, -canvas.height / 2);
+                ctx.translate(-canvasWidth / 2, -canvasHeight / 2);
             }
 
             ctx.fillStyle = textColor;
-            ctx.textBaseline = 'middle';
-
             let x = paddingLeft;
-            const y = paddingTop + (baseHeight / 2);
+            const stable_alphabetic_baseline = paddingTop + maxRawAscent;
 
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
-                const font = fontMode === 'dual' ? (isChinese(char) ? chineseFont : englishFont) : singleFont;
+                const isCharChinese = isChinese(char);
+                const yOffset = isCharChinese ? chineseYOffset : englishYOffset;
+                const font = fontMode === 'dual' ? (isCharChinese ? chineseFont : englishFont) : singleFont;
                 ctx.font = `${fontSize}px ${font}`;
-                ctx.fillText(char, x, y);
+                ctx.fillText(char, x, stable_alphabetic_baseline + yOffset);
                 x += ctx.measureText(char).width + letterSpacing;
             }
+            if (rotate) ctx.restore();
 
-            if (rotate) { ctx.restore(); }
+            guideCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+            if (showGuides) {
+                guideCtx.lineWidth = 1;
+                const drawLine = (y, color) => {
+                    guideCtx.strokeStyle = color;
+                    guideCtx.beginPath();
+                    guideCtx.moveTo(0, y);
+                    guideCtx.lineTo(canvasWidth, y);
+                    guideCtx.stroke();
+                };
+
+                if (hasNonChinese(text)) {
+                    const fontForEnglish = fontMode === 'dual' ? englishFont : singleFont;
+                    guideCtx.font = `${fontSize}px ${fontForEnglish}`;
+                    const metrics = guideCtx.measureText('gA');
+                    const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
+                    const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
+                    
+                    const baseline = stable_alphabetic_baseline + englishYOffset;
+                    const top = baseline - ascent;
+                    const bottom = baseline + descent;
+                    const middle = top + (ascent + descent) / 2;
+
+                    [top, middle, bottom].forEach(y => drawLine(y, 'rgba(255, 0, 0, 0.5)'));
+                }
+                
+                if (hasChinese(text)) {
+                    const fontForChinese = fontMode === 'dual' ? chineseFont : singleFont;
+                    guideCtx.font = `${fontSize}px ${fontForChinese}`;
+                    const metrics = guideCtx.measureText('中');
+                    const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
+                    const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
+
+                    const baseline = stable_alphabetic_baseline + chineseYOffset;
+                    const top = baseline - ascent;
+                    const bottom = baseline + descent;
+                    const middle = top + (ascent + descent) / 2;
+
+                    [top, middle, bottom].forEach(y => drawLine(y, 'rgba(0, 0, 255, 0.5)'));
+                }
+            }
             
-            document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvas.width)} × ${Math.round(canvas.height)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
+            document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvasWidth)} × ${Math.round(canvasHeight)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
         }
 
-        // ========== 函數已修改 (檔名產生邏輯) ==========
-        function downloadPNG() {
-            const text = document.getElementById('textInput').value;
-            if (text.length > 22) { alert('文字超過22個字元，無法下載！'); return; }
-            if (text.length === 0) { alert('請輸入文字後再下載！'); return; }
+        // --- 下載函數 ---
+        async function downloadPNG() {
+            const finalCanvas = document.createElement('canvas');
+            const finalCtx = finalCanvas.getContext('2d');
+            const textCanvas = document.getElementById('textCanvas');
             
-            // 獲取新增的寄件編號
+            finalCanvas.width = textCanvas.width;
+            finalCanvas.height = textCanvas.height;
+            finalCtx.drawImage(textCanvas, 0, 0);
+
             const shippingNumber = document.getElementById('shippingNumberInput').value.trim();
-
-            const canvas = document.getElementById('canvas');
+            const text = document.getElementById('textInput').value;
             const date = new Date();
-
-            // 建立包含秒的日期時間字串
             const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
             const timeStr = `${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
             const timestamp = `${dateStr}${timeStr}`;
-
             const safeText = text.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_').substring(0, 15);
             
-            // 產生新的檔名
-            // 格式: [寄件編號_]輸入文字_時間.png
             const filenamePrefix = shippingNumber ? `${shippingNumber}_` : '';
             const filename = `${filenamePrefix}${safeText}_${timestamp}.png`;
             
             const link = document.createElement('a');
             link.download = filename;
-            link.href = canvas.toDataURL("image/png");
+            link.href = finalCanvas.toDataURL("image/png");
             link.click();
         }
-        window.onclick = function(event) { const modal = document.getElementById('templateModal'); if (event.target == modal) { closeModal(); } }
     </script>
 </body>
 </html>
