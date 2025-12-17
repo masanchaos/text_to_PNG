@@ -51,9 +51,62 @@
         .checkbox-group { display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-top: 10px; }
         input[type="checkbox"] { width: auto; margin-right: 8px; }
         
+        /* 預覽區 Grid 佈局 */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 40px 1fr 40px;
+            grid-template-rows: 40px auto 40px;
+            gap: 10px;
+            align-items: center;
+            justify-items: center;
+            margin: 20px auto 50px auto;
+            max-width: 100%;
+        }
+
+        /* 邊距調整按鈕樣式 */
+        .margin-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .margin-controls.horizontal {
+            flex-direction: row;
+        }
+        .margin-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            background: white;
+            color: #666;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .margin-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .margin-label {
+            font-size: 10px;
+            color: #999;
+            text-align: center;
+        }
+
         #canvasWrapper {
             position: relative;
-            margin: 20px auto 50px auto; /* 增加底部 margin 給放大後的空間 */
+            /* 移除原本的 margin，交給 grid 控制 */
+            margin: 0;
             max-width: 100%;
             display: inline-block;
             border: 2px solid #e0e0e0;
@@ -65,6 +118,8 @@
             transform: scale(1.3);
             transform-origin: center;
             /* ========== END: 放大 30% ========== */
+            grid-column: 2;
+            grid-row: 2;
         }
         #textCanvas, #guideCanvas {
             position: absolute;
@@ -80,10 +135,14 @@
         .font-mode-btn.active { background: #667eea; color: white; border-color: #667eea; }
         .font-settings { display: none; }
         .font-settings.active { display: block; }
+        
+        /* 模板拖曳相關樣式 */
         .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 15px; }
         .template-card { padding: 15px; background: white; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer; text-align: center; transition: all 0.3s; position: relative; min-height: 140px; }
         .template-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .template-card.active { border-color: #667eea; background: #f0f2ff; }
+        .template-card.dragging { opacity: 0.4; border: 2px dashed #667eea; }
+        
         .add-template-card { padding: 15px; background: #fff; border: 2px dashed #667eea; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; }
         .add-template-card:hover { background: #f0f2ff; border-color: #764ba2; transform: translateY(-2px); }
         .delete-btn, .edit-btn { position: absolute; top: 5px; width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; display: none; color: white; font-size: 12px; }
@@ -121,8 +180,33 @@
     <div class="container">
         <div class="header"><h1>✨ 文字轉PNG轉換器</h1><p>自定義模板 • 22字元限制 • 透明背景 • 中英分離字體</p></div>
         <div class="content">
-            <div class="section"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><div class="section-title">🎨 自定義模板</div><div><button class="btn btn-secondary" onclick="exportTemplates()">📤 匯出</button><button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin: 0 10px;">📥 匯入</button><input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTemplates(event)"><button class="btn btn-primary" onclick="openTemplateModal()">+ 新增模板</button></div></div><div class="template-grid" id="templateGrid"><div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div></div><div class="info-box">💡 <strong>提示：</strong>點擊模板套用所有設定，再次點擊取消選擇。當前使用模板：<span id="currentTemplate">無</span></div></div>
-            <div class="section"><div class="section-title">輸入文字（最多22字元）</div><textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;">My Cute Jigglypuff</textarea><div class="char-counter" id="charCounter">14 / 22</div></div>
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div class="section-title">🎨 自定義模板</div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="exportTemplates()">📤 匯出</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin: 0 10px;">📥 匯入</button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTemplates(event)">
+                        <button class="btn btn-primary" onclick="openTemplateModal()">+ 新增模板</button>
+                    </div>
+                </div>
+                <div class="info-box" style="margin-bottom: 10px;">💡 <strong>提示：</strong>可拖曳卡片重新排序。點擊模板套用所有設定。</div>
+                <div class="template-grid" id="templateGrid">
+                    <div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>
+                </div>
+                <div class="info-box">當前使用模板：<span id="currentTemplate">無</span></div>
+            </div>
+
+            <div class="section">
+                <div style="margin-bottom: 20px;">
+                    <label for="shippingNumberInput" style="display: block; text-align: left; margin-bottom: 5px; font-weight: bold; color: #333;">📦 寄件編號 (檔名前綴)</label>
+                    <input type="text" id="shippingNumberInput" placeholder="選填，將作為下載檔名的開頭">
+                </div>
+                <div class="section-title">輸入文字（最多22字元）</div>
+                <textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;">My Cute Jigglypuff</textarea>
+                <div class="char-counter" id="charCounter">14 / 22</div>
+            </div>
+
             <div class="section"><div class="section-title">字體設定</div><div class="font-mode-toggle"><button class="font-mode-btn active" onclick="switchFontMode('single', event)">統一字體</button><button class="font-mode-btn" onclick="switchFontMode('dual', event)">中英分離</button></div>
                 <div id="singleFontSettings" class="font-settings active"><div><label>字體</label><select id="fontFamily"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option><option value="Arial, sans-serif">Arial (系統)</option></select></div></div>
                 <div id="dualFontSettings" class="font-settings"><div class="grid-2"><div><label>英文字體</label><select id="englishFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option><option value="Arial, sans-serif">Arial (系統)</option></select></div><div><label>中文字體</label><select id="chineseFont"><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option></select></div></div></div>
@@ -138,56 +222,52 @@
                     <div><label>英文 Y 軸偏移 (px)</label><input type="number" id="englishYOffset" value="0" step="0.5"></div>
                 </div>
                 <div class="grid-4">
-                    <div>
-                        <label>上邊距 (Top)</label>
-                        <div class="stepper">
-                            <button class="stepper-btn" onmousedown="startAdjusting('paddingTop', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingTop', -1)" ontouchend="stopAdjusting()">-</button>
-                            <input type="number" id="paddingTop" value="10" max="200">
-                            <button class="stepper-btn" onmousedown="startAdjusting('paddingTop', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingTop', 1)" ontouchend="stopAdjusting()">+</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label>下邊距 (Bottom)</label>
-                        <div class="stepper">
-                            <button class="stepper-btn" onmousedown="startAdjusting('paddingBottom', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingBottom', -1)" ontouchend="stopAdjusting()">-</button>
-                            <input type="number" id="paddingBottom" value="10" max="200">
-                            <button class="stepper-btn" onmousedown="startAdjusting('paddingBottom', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingBottom', 1)" ontouchend="stopAdjusting()">+</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label>左邊距 (Left)</label>
-                        <div class="stepper">
-                            <button class="stepper-btn" onmousedown="startAdjusting('paddingLeft', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingLeft', -1)" ontouchend="stopAdjusting()">-</button>
-                            <input type="number" id="paddingLeft" value="10" max="200">
-                            <button class="stepper-btn" onmousedown="startAdjusting('paddingLeft', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingLeft', 1)" ontouchend="stopAdjusting()">+</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label>右邊距 (Right)</label>
-                        <div class="stepper">
-                            <button class="stepper-btn" onmousedown="startAdjusting('paddingRight', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingRight', -1)" ontouchend="stopAdjusting()">-</button>
-                            <input type="number" id="paddingRight" value="10" max="200">
-                            <button class="stepper-btn" onmousedown="startAdjusting('paddingRight', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="startAdjusting('paddingRight', 1)" ontouchend="stopAdjusting()">+</button>
-                        </div>
-                    </div>
+                    <div><label>上邊距 (Top)</label><input type="number" id="paddingTop" value="10" max="200"></div>
+                    <div><label>下邊距 (Bottom)</label><input type="number" id="paddingBottom" value="10" max="200"></div>
+                    <div><label>左邊距 (Left)</label><input type="number" id="paddingLeft" value="10" max="200"></div>
+                    <div><label>右邊距 (Right)</label><input type="number" id="paddingRight" value="10" max="200"></div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
                     <input type="checkbox" id="showAlignmentGuides" style="margin-left: 20px;" checked><label for="showAlignmentGuides">顯示對齊輔助線</label>
                 </div>
-                <div class="info-box">📌 <strong>提示：</strong>如果字體被裁切，請試著增加邊距。輔助線可協助對齊中英文字。</div>
+                <div class="info-box">📌 <strong>提示：</strong>您可以使用下方預覽區周圍的按鈕快速調整邊距。勾選旋轉時，按鈕方向會智慧調整。</div>
             </div>
             <div class="section" style="text-align: center;"> <div class="section-title" style="text-align: left;">預覽與下載</div>
-                <div id="canvasWrapper">
-                    <canvas id="textCanvas"></canvas>
-                    <canvas id="guideCanvas"></canvas>
+                
+                <div class="preview-grid">
+                    <div class="margin-controls horizontal" style="grid-column: 2; grid-row: 1;">
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Top', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Top', -1)" ontouchend="stopAdjusting()">-</button>
+                        <span class="margin-label">上</span>
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Top', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Top', 1)" ontouchend="stopAdjusting()">+</button>
+                    </div>
+
+                    <div class="margin-controls" style="grid-column: 1; grid-row: 2;">
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Left', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Left', 1)" ontouchend="stopAdjusting()">+</button>
+                        <span class="margin-label">左</span>
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Left', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Left', -1)" ontouchend="stopAdjusting()">-</button>
+                    </div>
+
+                    <div id="canvasWrapper">
+                        <canvas id="textCanvas"></canvas>
+                        <canvas id="guideCanvas"></canvas>
+                    </div>
+
+                    <div class="margin-controls" style="grid-column: 3; grid-row: 2;">
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Right', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Right', 1)" ontouchend="stopAdjusting()">+</button>
+                        <span class="margin-label">右</span>
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Right', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Right', -1)" ontouchend="stopAdjusting()">-</button>
+                    </div>
+
+                    <div class="margin-controls horizontal" style="grid-column: 2; grid-row: 3;">
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Bottom', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Bottom', -1)" ontouchend="stopAdjusting()">-</button>
+                        <span class="margin-label">下</span>
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Bottom', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Bottom', 1)" ontouchend="stopAdjusting()">+</button>
+                    </div>
                 </div>
+
                 <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;" id="sizeInfo">尺寸資訊</div>
 
-                <div style="max-width: 400px; margin: 20px auto 0 auto;">
-                    <label for="shippingNumberInput" style="display: block; text-align: left; margin-bottom: 5px; font-weight: bold; color: #333;">寄件編號 (檔名前綴)</label>
-                    <input type="text" id="shippingNumberInput" placeholder="選填，將作為下載檔名的開頭">
-                </div>
                 <div style="text-align: center; margin-top: 20px;"><button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button></div>
             </div>
         </div>
@@ -281,7 +361,31 @@
         }
         
         // --- 輔助函數 ---
-        function adjustPadding(inputId, amount) { const input = document.getElementById(inputId); let value = parseInt(input.value, 10) || 0; value += amount; input.value = value; input.dispatchEvent(new Event('input')); }
+        function adjustPadding(inputId, amount) { 
+            const input = document.getElementById(inputId); 
+            let value = parseInt(input.value, 10) || 0; 
+            value += amount; 
+            input.value = value; 
+            input.dispatchEvent(new Event('input')); 
+        }
+
+        // [修改 4] 智慧邊距調整函數
+        function smartAdjustPadding(visualSide, amount) {
+            const isRotated = document.getElementById('rotate180').checked;
+            let logicalSide = visualSide;
+
+            if (isRotated) {
+                // 如果旋轉，視覺方向與邏輯方向相反
+                if (visualSide === 'Top') logicalSide = 'Bottom';
+                else if (visualSide === 'Bottom') logicalSide = 'Top';
+                else if (visualSide === 'Left') logicalSide = 'Right';
+                else if (visualSide === 'Right') logicalSide = 'Left';
+            }
+
+            const inputId = 'padding' + logicalSide;
+            startAdjusting(inputId, amount);
+        }
+
         function startAdjusting(inputId, amount) { adjustPadding(inputId, amount); adjustTimeout = setTimeout(() => { adjustInterval = setInterval(() => { adjustPadding(inputId, amount); }, 100); }, 400); }
         function stopAdjusting() { clearTimeout(adjustTimeout); clearInterval(adjustInterval); }
         function switchFontMode(mode, event) { fontMode = mode; document.querySelectorAll('.font-mode-btn').forEach(btn => btn.classList.remove('active')); if (event) event.target.classList.add('active'); document.getElementById('singleFontSettings').classList.toggle('active', mode === 'single'); document.getElementById('dualFontSettings').classList.toggle('active', mode === 'dual'); updateCanvas(); }
@@ -290,13 +394,108 @@
         function hasNonChinese(text) { for (let i = 0; i < text.length; i++) { if (!isChinese(text[i])) return true; } return false; }
         function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); const downloadBtn = document.getElementById('downloadBtn'); counter.textContent = `${count} / 22`; if (count > 22) { counter.className = 'char-counter error'; downloadBtn.disabled = true; } else { counter.className = 'char-counter'; downloadBtn.disabled = false; } }
 
-        // --- 模板相關函數 (完整版) ---
-        async function loadTemplates(){try{const response=await fetch("./templates.json");if(response.ok){const jsonTemplates=await response.json();if(Array.isArray(jsonTemplates)){defaultTemplatesFromFile=jsonTemplates}}}catch(error){console.log("讀取預設 templates.json 失敗:",error)}
-        let userTemplates=[];const saved=localStorage.getItem("pngTemplates");if(saved){try{const parsed=JSON.parse(saved);if(Array.isArray(parsed)){userTemplates=parsed}}catch(error){console.error("解析 localStorage 模板失敗:",error)}}
-        templates=[...defaultTemplatesFromFile,...userTemplates];if(templates.length===0){templates.push({name:"標準模板",fontSize:42.34,letterSpacing:15,paddingTop:10,paddingBottom:10,paddingLeft:20,paddingRight:20,fontMode:"single",singleFont:"'Noto Sans CJK TC', sans-serif",textColor:"#000000",rotate:false,desc:"預設標準模板"})}
-        renderTemplates()}
-        function saveTemplatesLocal(){const defaultTemplatesSet=new Set(defaultTemplatesFromFile.map(t=>JSON.stringify(t)));const userTemplatesToSave=templates.filter(t=>!defaultTemplatesSet.has(JSON.stringify(t)));localStorage.setItem("pngTemplates",JSON.stringify(userTemplatesToSave))}
-        function renderTemplates(){const grid=document.getElementById("templateGrid");grid.innerHTML=`<div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>`;templates.forEach((template,index)=>{const card=document.createElement("div");card.className="template-card";if(template.name===currentTemplateName)card.classList.add("active");card.innerHTML=`<button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button><button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button><div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div><div style="font-size: 12px; color: #666;">${template.fontSize}px | 字距${template.letterSpacing}px<br>${template.fontMode==="dual"?"中英分離":"統一字體"}${template.rotate?"<br>旋轉180°":""}${template.desc?"<br>"+template.desc:""}</div>`;card.onclick=()=>applyTemplate(template);grid.appendChild(card)})}
+        // --- 模板相關函數 (含拖曳排序與全列表儲存) ---
+        async function loadTemplates(){
+            // 嘗試讀取包含順序的完整列表
+            const savedFullList = localStorage.getItem("pngTemplates_full");
+            if (savedFullList) {
+                try {
+                    const parsed = JSON.parse(savedFullList);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        templates = parsed;
+                        // 雖然用了本地存檔，但還是要讀取 default 以防變數未定義
+                         try{const response=await fetch("./templates.json");if(response.ok){const jsonTemplates=await response.json();if(Array.isArray(jsonTemplates)){defaultTemplatesFromFile=jsonTemplates}}}catch(e){}
+                        renderTemplates();
+                        return;
+                    }
+                } catch(e) { console.error("解析完整列表失敗", e); }
+            }
+
+            // 如果沒有完整列表，走舊邏輯
+            try{const response=await fetch("./templates.json");if(response.ok){const jsonTemplates=await response.json();if(Array.isArray(jsonTemplates)){defaultTemplatesFromFile=jsonTemplates}}}catch(error){console.log("讀取預設 templates.json 失敗:",error)}
+            let userTemplates=[];const saved=localStorage.getItem("pngTemplates");if(saved){try{const parsed=JSON.parse(saved);if(Array.isArray(parsed)){userTemplates=parsed}}catch(error){console.error("解析 localStorage 模板失敗:",error)}}
+            templates=[...defaultTemplatesFromFile,...userTemplates];
+            if(templates.length===0){templates.push({name:"標準模板",fontSize:42.34,letterSpacing:15,paddingTop:10,paddingBottom:10,paddingLeft:20,paddingRight:20,fontMode:"single",singleFont:"'Noto Sans CJK TC', sans-serif",textColor:"#000000",rotate:false,desc:"預設標準模板"})}
+            renderTemplates();
+        }
+
+        // [修改 2] 儲存所有模板順序
+        function saveTemplatesLocal(){
+            // 儲存完整列表以保留順序
+            localStorage.setItem("pngTemplates_full", JSON.stringify(templates));
+            
+            // 為了向下相容或匯出，也保留原本只存自定義模板的邏輯 (可選)
+            const defaultTemplatesSet=new Set(defaultTemplatesFromFile.map(t=>JSON.stringify(t)));
+            const userTemplatesToSave=templates.filter(t=>!defaultTemplatesSet.has(JSON.stringify(t)));
+            localStorage.setItem("pngTemplates",JSON.stringify(userTemplatesToSave));
+        }
+
+        // [修改 2] 拖曳排序事件處理
+        let dragSrcEl = null;
+
+        function handleDragStart(e) {
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            this.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) { this.classList.add('over'); }
+        function handleDragLeave(e) { this.classList.remove('over'); }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) e.stopPropagation();
+            const sourceIndex = parseInt(dragSrcEl.getAttribute('data-index'));
+            const targetIndex = parseInt(this.getAttribute('data-index'));
+
+            if (dragSrcEl !== this) {
+                // 交換陣列中的元素
+                const movedItem = templates[sourceIndex];
+                templates.splice(sourceIndex, 1);
+                templates.splice(targetIndex, 0, movedItem);
+                saveTemplatesLocal();
+                renderTemplates();
+            }
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.template-card').forEach(item => item.classList.remove('over'));
+        }
+
+        function renderTemplates(){
+            const grid=document.getElementById("templateGrid");
+            // 保留新增按鈕，清空其他
+            grid.innerHTML=`<div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>`;
+            
+            templates.forEach((template,index)=>{
+                const card=document.createElement("div");
+                card.className="template-card";
+                card.setAttribute('draggable', 'true'); // 啟用拖曳
+                card.setAttribute('data-index', index);
+                
+                // 綁定拖曳事件
+                card.addEventListener('dragstart', handleDragStart, false);
+                card.addEventListener('dragenter', handleDragEnter, false);
+                card.addEventListener('dragover', handleDragOver, false);
+                card.addEventListener('dragleave', handleDragLeave, false);
+                card.addEventListener('drop', handleDrop, false);
+                card.addEventListener('dragend', handleDragEnd, false);
+
+                if(template.name===currentTemplateName)card.classList.add("active");
+                card.innerHTML=`<button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button><button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button><div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div><div style="font-size: 12px; color: #666;">${template.fontSize}px | 字距${template.letterSpacing}px<br>${template.fontMode==="dual"?"中英分離":"統一字體"}${template.rotate?"<br>旋轉180°":""}${template.desc?"<br>"+template.desc:""}</div>`;
+                card.onclick=()=>applyTemplate(template);
+                grid.appendChild(card)
+            })
+        }
+
         function openTemplateModal(){document.getElementById("templateModal").style.display="block";document.getElementById("editIndex").value="-1";document.getElementById("templateName").value="";document.getElementById("templateFontSize").value=document.getElementById("fontSize").value;document.getElementById("templateLetterSpacing").value=document.getElementById("letterSpacing").value;document.getElementById("templatePaddingTop").value=document.getElementById("paddingTop").value;document.getElementById("templatePaddingBottom").value=document.getElementById("paddingBottom").value;document.getElementById("templatePaddingLeft").value=document.getElementById("paddingLeft").value;document.getElementById("templatePaddingRight").value=document.getElementById("paddingRight").value;document.getElementById("templateFontMode").value=fontMode;document.getElementById("templateSingleFont").value=document.getElementById("fontFamily").value;document.getElementById("templateEnglishFont").value=document.getElementById("englishFont").value;document.getElementById("templateChineseFont").value=document.getElementById("chineseFont").value;document.getElementById("templateTextColor").value=document.getElementById("textColor").value;document.getElementById("templateRotate").checked=document.getElementById("rotate180").checked;document.getElementById("templateDesc").value=""}
         function closeModal(){document.getElementById("templateModal").style.display="none"}
         function saveTemplate(){const name=document.getElementById("templateName").value.trim();if(!name){alert("請輸入模板名稱");return}
