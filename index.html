@@ -138,7 +138,6 @@
         /* 模板拖曳相關樣式 */
         .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 15px; }
         
-        /* [修改] 固定高度並垂直置中內容 */
         .template-card { 
             padding: 15px; 
             background: white; 
@@ -148,17 +147,16 @@
             text-align: center; 
             transition: all 0.3s; 
             position: relative; 
-            height: 150px; /* 固定高度 */
-            display: flex; /* 使用 Flexbox */
+            height: 150px; 
+            display: flex; 
             flex-direction: column;
-            justify-content: center; /* 垂直置中 */
-            align-items: center; /* 水平置中 */
+            justify-content: center; 
+            align-items: center; 
         }
         .template-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .template-card.active { border-color: #667eea; background: #f0f2ff; }
         .template-card.dragging { opacity: 0.4; border: 2px dashed #667eea; }
         
-        /* [修改] 固定高度 */
         .add-template-card { 
             padding: 15px; 
             background: #fff; 
@@ -171,7 +169,7 @@
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
-            height: 150px; /* 固定高度 */
+            height: 150px;
         }
         .add-template-card:hover { background: #f0f2ff; border-color: #764ba2; transform: translateY(-2px); }
         
@@ -441,32 +439,51 @@
         function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); const downloadBtn = document.getElementById('downloadBtn'); counter.textContent = `${count} / 22`; if (count > 22) { counter.className = 'char-counter error'; downloadBtn.disabled = true; } else { counter.className = 'char-counter'; downloadBtn.disabled = false; } }
 
         // --- 模板相關函數 ---
+        // [修改] loadTemplates 現在會同時讀取遠端並嘗試更新本地舊資料
         async function loadTemplates(){
+            // 1. 永遠先嘗試讀取最新的 JSON，確保我們有最新的標準資料
+            try {
+                const response = await fetch("./templates.json");
+                if (response.ok) {
+                    const jsonTemplates = await response.json();
+                    if (Array.isArray(jsonTemplates)) {
+                        defaultTemplatesFromFile = jsonTemplates;
+                    }
+                }
+            } catch (error) {
+                console.log("讀取預設 templates.json 失敗:", error);
+            }
+
+            // 2. 讀取本地儲存
             const savedFullList = localStorage.getItem("pngTemplates_full");
             if (savedFullList) {
                 try {
-                    const parsed = JSON.parse(savedFullList);
+                    let parsed = JSON.parse(savedFullList);
                     if (Array.isArray(parsed) && parsed.length > 0) {
+                        // 3. 自動同步邏輯：檢查並注入新欄位
+                        // 這是為了解決「舊的本地存檔沒有 Y 軸設定」的問題
+                        if (defaultTemplatesFromFile.length > 0) {
+                             parsed = parsed.map(localT => {
+                                // 找找看有沒有同名的遠端模板
+                                const remoteT = defaultTemplatesFromFile.find(t => t.name === localT.name);
+                                if (remoteT) {
+                                    // 如果找到了，且遠端有設定 Y 軸偏移，就將其「注入」到本地模板中
+                                    // 這樣就能在保留排序的同時，更新設定
+                                    if (remoteT.chineseYOffset !== undefined) localT.chineseYOffset = remoteT.chineseYOffset;
+                                    if (remoteT.englishYOffset !== undefined) localT.englishYOffset = remoteT.englishYOffset;
+                                }
+                                return localT;
+                             });
+                        }
+                        
                         templates = parsed;
-                         try{const response=await fetch("./templates.json");if(response.ok){const jsonTemplates=await response.json();if(Array.isArray(jsonTemplates)){defaultTemplatesFromFile=jsonTemplates}}}catch(e){}
                         renderTemplates();
-                        return;
+                        return; // 成功載入並同步後返回
                     }
                 } catch(e) { console.error("解析完整列表失敗", e); }
             }
 
-            try{
-                const response=await fetch("./templates.json");
-                if(response.ok){
-                    const jsonTemplates=await response.json();
-                    if(Array.isArray(jsonTemplates)){
-                        defaultTemplatesFromFile=jsonTemplates;
-                    }
-                }
-            }catch(error){
-                console.log("讀取預設 templates.json 失敗:",error)
-            }
-
+            // 如果本地完全沒資料，就用預設的
             let userTemplates=[];
             const saved=localStorage.getItem("pngTemplates");
             if(saved){try{const parsed=JSON.parse(saved);if(Array.isArray(parsed)){userTemplates=parsed}}catch(error){console.error("解析 localStorage 模板失敗:",error)}}
