@@ -53,11 +53,13 @@
         .checkbox-group { display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-top: 10px; }
         input[type="checkbox"] { width: auto; margin-right: 8px; }
         
-        /* 預覽區 Grid 佈局 */
+        /* 預覽區 Grid 佈局 [修改] 增加行列尺寸以容納垂直/水平排列的按鈕 */
         .preview-grid {
             display: grid;
-            grid-template-columns: 40px 1fr 40px;
-            grid-template-rows: 40px auto 40px;
+            /* 改為 90px 寬度 */
+            grid-template-columns: 90px 1fr 90px; 
+            /* 改為 90px 高度 */
+            grid-template-rows: 90px auto 90px;
             gap: 10px;
             align-items: center;
             justify-items: center;
@@ -265,13 +267,13 @@
             <div class="section" style="text-align: center;"> <div class="section-title" style="text-align: left;">預覽與下載</div>
                 
                 <div class="preview-grid">
-                    <div class="margin-controls horizontal" style="grid-column: 2; grid-row: 1;">
-                        <button class="margin-btn" onmousedown="smartAdjustPadding('Top', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Top', -1)" ontouchend="stopAdjusting()">-</button>
-                        <span class="margin-label">上</span>
+                    <div class="margin-controls" style="grid-column: 2; grid-row: 1;">
                         <button class="margin-btn" onmousedown="smartAdjustPadding('Top', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Top', 1)" ontouchend="stopAdjusting()">+</button>
+                        <span class="margin-label">上</span>
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Top', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Top', -1)" ontouchend="stopAdjusting()">-</button>
                     </div>
 
-                    <div class="margin-controls" style="grid-column: 1; grid-row: 2;">
+                    <div class="margin-controls horizontal" style="grid-column: 1; grid-row: 2;">
                         <button class="margin-btn" onmousedown="smartAdjustPadding('Left', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Left', 1)" ontouchend="stopAdjusting()">+</button>
                         <span class="margin-label">左</span>
                         <button class="margin-btn" onmousedown="smartAdjustPadding('Left', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Left', -1)" ontouchend="stopAdjusting()">-</button>
@@ -282,13 +284,13 @@
                         <canvas id="guideCanvas"></canvas>
                     </div>
 
-                    <div class="margin-controls" style="grid-column: 3; grid-row: 2;">
-                        <button class="margin-btn" onmousedown="smartAdjustPadding('Right', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Right', 1)" ontouchend="stopAdjusting()">+</button>
-                        <span class="margin-label">右</span>
+                    <div class="margin-controls horizontal" style="grid-column: 3; grid-row: 2;">
                         <button class="margin-btn" onmousedown="smartAdjustPadding('Right', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Right', -1)" ontouchend="stopAdjusting()">-</button>
+                        <span class="margin-label">右</span>
+                        <button class="margin-btn" onmousedown="smartAdjustPadding('Right', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Right', 1)" ontouchend="stopAdjusting()">+</button>
                     </div>
 
-                    <div class="margin-controls horizontal" style="grid-column: 2; grid-row: 3;">
+                    <div class="margin-controls" style="grid-column: 2; grid-row: 3;">
                         <button class="margin-btn" onmousedown="smartAdjustPadding('Bottom', -1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Bottom', -1)" ontouchend="stopAdjusting()">-</button>
                         <span class="margin-label">下</span>
                         <button class="margin-btn" onmousedown="smartAdjustPadding('Bottom', 1)" onmouseup="stopAdjusting()" onmouseleave="stopAdjusting()" ontouchstart="smartAdjustPadding('Bottom', 1)" ontouchend="stopAdjusting()">+</button>
@@ -439,9 +441,7 @@
         function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); const downloadBtn = document.getElementById('downloadBtn'); counter.textContent = `${count} / 22`; if (count > 22) { counter.className = 'char-counter error'; downloadBtn.disabled = true; } else { counter.className = 'char-counter'; downloadBtn.disabled = false; } }
 
         // --- 模板相關函數 ---
-        // [修改] loadTemplates 現在會同時讀取遠端並嘗試更新本地舊資料
         async function loadTemplates(){
-            // 1. 永遠先嘗試讀取最新的 JSON，確保我們有最新的標準資料
             try {
                 const response = await fetch("./templates.json");
                 if (response.ok) {
@@ -454,36 +454,28 @@
                 console.log("讀取預設 templates.json 失敗:", error);
             }
 
-            // 2. 讀取本地儲存
             const savedFullList = localStorage.getItem("pngTemplates_full");
             if (savedFullList) {
                 try {
                     let parsed = JSON.parse(savedFullList);
                     if (Array.isArray(parsed) && parsed.length > 0) {
-                        // 3. 自動同步邏輯：檢查並注入新欄位
-                        // 這是為了解決「舊的本地存檔沒有 Y 軸設定」的問題
                         if (defaultTemplatesFromFile.length > 0) {
                              parsed = parsed.map(localT => {
-                                // 找找看有沒有同名的遠端模板
                                 const remoteT = defaultTemplatesFromFile.find(t => t.name === localT.name);
                                 if (remoteT) {
-                                    // 如果找到了，且遠端有設定 Y 軸偏移，就將其「注入」到本地模板中
-                                    // 這樣就能在保留排序的同時，更新設定
                                     if (remoteT.chineseYOffset !== undefined) localT.chineseYOffset = remoteT.chineseYOffset;
                                     if (remoteT.englishYOffset !== undefined) localT.englishYOffset = remoteT.englishYOffset;
                                 }
                                 return localT;
                              });
                         }
-                        
                         templates = parsed;
                         renderTemplates();
-                        return; // 成功載入並同步後返回
+                        return;
                     }
                 } catch(e) { console.error("解析完整列表失敗", e); }
             }
 
-            // 如果本地完全沒資料，就用預設的
             let userTemplates=[];
             const saved=localStorage.getItem("pngTemplates");
             if(saved){try{const parsed=JSON.parse(saved);if(Array.isArray(parsed)){userTemplates=parsed}}catch(error){console.error("解析 localStorage 模板失敗:",error)}}
