@@ -38,7 +38,6 @@
         .section-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #333; }
         input, select, textarea { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-top: 5px; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; }
-        /* 禁用狀態樣式 */
         input:disabled { background-color: #eee; color: #999; cursor: not-allowed; }
         
         .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
@@ -116,10 +115,8 @@
             background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
             background-size: 20px 20px;
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            /* ========== START: 放大 30% ========== */
             transform: scale(1.3);
             transform-origin: center;
-            /* ========== END: 放大 30% ========== */
             grid-column: 2;
             grid-row: 2;
         }
@@ -140,13 +137,44 @@
         
         /* 模板拖曳相關樣式 */
         .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 15px; }
-        .template-card { padding: 15px; background: white; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer; text-align: center; transition: all 0.3s; position: relative; min-height: 140px; }
+        
+        /* [修改] 固定高度並垂直置中內容 */
+        .template-card { 
+            padding: 15px; 
+            background: white; 
+            border-radius: 8px; 
+            border: 2px solid #e0e0e0; 
+            cursor: pointer; 
+            text-align: center; 
+            transition: all 0.3s; 
+            position: relative; 
+            height: 150px; /* 固定高度 */
+            display: flex; /* 使用 Flexbox */
+            flex-direction: column;
+            justify-content: center; /* 垂直置中 */
+            align-items: center; /* 水平置中 */
+        }
         .template-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .template-card.active { border-color: #667eea; background: #f0f2ff; }
         .template-card.dragging { opacity: 0.4; border: 2px dashed #667eea; }
         
-        .add-template-card { padding: 15px; background: #fff; border: 2px dashed #667eea; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; }
+        /* [修改] 固定高度 */
+        .add-template-card { 
+            padding: 15px; 
+            background: #fff; 
+            border: 2px dashed #667eea; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            text-align: center; 
+            transition: all 0.3s; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 150px; /* 固定高度 */
+        }
         .add-template-card:hover { background: #f0f2ff; border-color: #764ba2; transform: translateY(-2px); }
+        
         .delete-btn, .edit-btn { position: absolute; top: 5px; width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; display: none; color: white; font-size: 12px; }
         .delete-btn { right: 5px; background: #ff5252; }
         .edit-btn { right: 35px; background: #667eea; }
@@ -303,7 +331,6 @@
         let currentTemplateName = null;
         let adjustTimeout = null;
         let adjustInterval = null;
-        // [新增] 狀態記憶變數
         let savedChineseY = 0;
         let savedEnglishY = 0;
         let yOffsetsDisabled = false;
@@ -603,7 +630,6 @@
             
             document.getElementById("rotate180").checked=template.rotate||false;
             
-            // [關鍵] 套用模板數值，並暫時解鎖，讓 updateCanvas 邏輯可以捕捉到新值
             document.getElementById("chineseYOffset").value = template.chineseYOffset || 0;
             document.getElementById("englishYOffset").value = template.englishYOffset || 0;
             yOffsetsDisabled = false;
@@ -631,27 +657,23 @@
         const dataStr=JSON.stringify(templates,null,2);const dataBlob=new Blob([dataStr],{type:"application/json"});const url=URL.createObjectURL(dataBlob);const link=document.createElement("a");link.href=url;link.download=`templates-${Date.now()}.json`;link.click();URL.revokeObjectURL(url)}
         function importTemplates(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader;reader.onload=function(e){try{const imported=JSON.parse(e.target.result);if(Array.isArray(imported)){templates=templates.concat(imported);saveTemplatesLocal();renderTemplates();alert("模板匯入成功！")}else{alert("匯入失敗：檔案格式無效")}}catch(error){alert("匯入失敗：檔案格式錯誤")}};reader.readAsText(file);event.target.value=""}
         
-        // [新增] 處理 Y 軸偏移輸入框的自動啟用/禁用與數值還原邏輯
         function handleYOffsetLogic(isMixed) {
             const chInput = document.getElementById('chineseYOffset');
             const enInput = document.getElementById('englishYOffset');
 
             if (isMixed) {
                 if (yOffsetsDisabled) {
-                    // 從單語變混合：還原儲存的數值並解鎖
                     chInput.value = savedChineseY;
                     enInput.value = savedEnglishY;
                     chInput.disabled = false;
                     enInput.disabled = false;
                     yOffsetsDisabled = false;
                 } else {
-                    // 已經是混合狀態：持續記錄使用者手動調整的數值
                     savedChineseY = parseFloat(chInput.value) || 0;
                     savedEnglishY = parseFloat(enInput.value) || 0;
                 }
             } else {
                 if (!yOffsetsDisabled) {
-                    // 從混合變單語：先存起來，再歸零鎖定
                     savedChineseY = parseFloat(chInput.value) || 0;
                     savedEnglishY = parseFloat(enInput.value) || 0;
                     
@@ -661,7 +683,6 @@
                     enInput.disabled = true;
                     yOffsetsDisabled = true;
                 }
-                // 已經是單語狀態：確保數值為 0（防止異步問題）
                 if (parseFloat(chInput.value) !== 0) chInput.value = 0;
                 if (parseFloat(enInput.value) !== 0) enInput.value = 0;
             }
@@ -691,11 +712,9 @@
             const chineseFont = document.getElementById('chineseFont').value;
             const showGuides = document.getElementById('showAlignmentGuides').checked;
 
-            // [新增] 執行 UI 連動邏輯
             const isMixed = hasChinese(text) && hasNonChinese(text);
             handleYOffsetLogic(isMixed);
             
-            // 現在可以直接讀取輸入框數值，因為 handleYOffsetLogic 已經確保單語時為 0，混合時為設定值
             const effectiveChineseYOffset = parseFloat(document.getElementById('chineseYOffset').value) || 0;
             const effectiveEnglishYOffset = parseFloat(document.getElementById('englishYOffset').value) || 0;
 
@@ -747,7 +766,6 @@
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 const isCharChinese = isChinese(char);
-                // 使用從 UI 讀取到的（可能是 0 或設定值）
                 const yOffset = isCharChinese ? effectiveChineseYOffset : effectiveEnglishYOffset;
                 const font = fontMode === 'dual' ? (isCharChinese ? chineseFont : englishFont) : singleFont;
                 ctx.font = `${fontSize}px ${font}`;
