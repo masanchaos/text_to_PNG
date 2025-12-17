@@ -38,6 +38,9 @@
         .section-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #333; }
         input, select, textarea { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-top: 5px; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; }
+        /* 禁用狀態樣式 */
+        input:disabled { background-color: #eee; color: #999; cursor: not-allowed; }
+        
         .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
         .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; }
         .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s; font-size: 14px; }
@@ -218,20 +221,20 @@
                     <div><label>文字顏色</label><input type="color" id="textColor" value="#000000" style="padding: 5px; height: 42px;"></div>
                 </div>
                 <div class="grid-2" style="margin-bottom: 15px; border-top: 1px solid #e0e0e0; padding-top: 15px;">
-                    <div><label>中文 Y 軸偏移 (px)</label><input type="number" id="chineseYOffset" value="0" step="0.5"></div>
-                    <div><label>英文 Y 軸偏移 (px)</label><input type="number" id="englishYOffset" value="0" step="0.5"></div>
+                    <div><label>中文 Y 軸偏移 (px)</label><input type="number" id="chineseYOffset" value="0" step="0.5" title="僅在文字同時包含中文與英文時生效"></div>
+                    <div><label>英文 Y 軸偏移 (px)</label><input type="number" id="englishYOffset" value="0" step="0.5" title="僅在文字同時包含中文與英文時生效"></div>
                 </div>
                 <div class="grid-4">
-                    <div><label>上邊距 (Top)</label><input type="number" id="paddingTop" value="10" max="200"></div>
-                    <div><label>下邊距 (Bottom)</label><input type="number" id="paddingBottom" value="10" max="200"></div>
-                    <div><label>左邊距 (Left)</label><input type="number" id="paddingLeft" value="10" max="200"></div>
-                    <div><label>右邊距 (Right)</label><input type="number" id="paddingRight" value="10" max="200"></div>
+                    <div><label id="labelPaddingTop">上邊距 (Top)</label><input type="number" id="paddingTop" value="10" max="200"></div>
+                    <div><label id="labelPaddingBottom">下邊距 (Bottom)</label><input type="number" id="paddingBottom" value="10" max="200"></div>
+                    <div><label id="labelPaddingLeft">左邊距 (Left)</label><input type="number" id="paddingLeft" value="10" max="200"></div>
+                    <div><label id="labelPaddingRight">右邊距 (Right)</label><input type="number" id="paddingRight" value="10" max="200"></div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
                     <input type="checkbox" id="showAlignmentGuides" style="margin-left: 20px;" checked><label for="showAlignmentGuides">顯示對齊輔助線</label>
                 </div>
-                <div class="info-box">📌 <strong>提示：</strong>您可以使用下方預覽區周圍的按鈕快速調整邊距。勾選旋轉時，按鈕方向會智慧調整。</div>
+                <div class="info-box">📌 <strong>提示：</strong>當勾選旋轉時，上方輸入框的標籤文字會自動智慧調整。Y 軸偏移僅在「中英混排」時解鎖並生效。</div>
             </div>
             <div class="section" style="text-align: center;"> <div class="section-title" style="text-align: left;">預覽與下載</div>
                 
@@ -272,13 +275,17 @@
             </div>
         </div>
     </div>
+    
     <div id="templateModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal()">&times;</span><h2 style="margin-bottom: 20px;">📝 模板設定</h2><input type="hidden" id="editIndex" value="-1"><div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div><div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
             <div style="margin-bottom: 15px;"><label>統一字體（統一模式用）</label><select id="templateSingleFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option><option value="Arial, sans-serif">Arial (系統)</option></select></div>
             <div class="grid-2" style="margin-bottom: 15px;"><div><label>英文字體（分離模式用）</label><select id="templateEnglishFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option><option value="Arial, sans-serif">Arial (系統)</option></select></div><div><label>中文字體</label><select id="templateChineseFont"><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option></select></div></div>
             <div class="grid-2" style="margin-bottom: 15px;">
                 <div><label>字級 (px)</label><input type="number" id="templateFontSize" value="42.34" step="0.01"></div>
                 <div><label>字距 (px)</label><input type="number" id="templateLetterSpacing" value="15"></div>
-                <div><label>文字顏色</label><input type="color" id="templateTextColor" value="#000000"></div>
+            </div>
+            <div class="grid-2" style="margin-bottom: 15px;">
+                <div><label>中文 Y 軸偏移</label><input type="number" id="templateChineseYOffset" value="0" step="0.5"></div>
+                <div><label>英文 Y 軸偏移</label><input type="number" id="templateEnglishYOffset" value="0" step="0.5"></div>
             </div>
              <div class="grid-4" style="margin-bottom: 15px;">
                 <div><label>上邊距</label><input type="number" id="templatePaddingTop" value="10"></div>
@@ -296,6 +303,10 @@
         let currentTemplateName = null;
         let adjustTimeout = null;
         let adjustInterval = null;
+        // [新增] 狀態記憶變數
+        let savedChineseY = 0;
+        let savedEnglishY = 0;
+        let yOffsetsDisabled = false;
         
         // --- 初始化 ---
         window.onload = async function() {
@@ -323,6 +334,8 @@
                 });
             });
 
+            document.getElementById('rotate180').addEventListener('change', updatePaddingLabels);
+            updatePaddingLabels();
             updateCanvas();
         }
 
@@ -369,6 +382,14 @@
             input.dispatchEvent(new Event('input')); 
         }
 
+        function updatePaddingLabels() {
+            const isRotated = document.getElementById('rotate180').checked;
+            document.getElementById('labelPaddingTop').textContent = isRotated ? '下邊距 (Bottom)' : '上邊距 (Top)';
+            document.getElementById('labelPaddingBottom').textContent = isRotated ? '上邊距 (Top)' : '下邊距 (Bottom)';
+            document.getElementById('labelPaddingLeft').textContent = isRotated ? '右邊距 (Right)' : '左邊距 (Left)';
+            document.getElementById('labelPaddingRight').textContent = isRotated ? '左邊距 (Left)' : '右邊距 (Right)';
+        }
+
         function smartAdjustPadding(visualSide, amount) {
             const isRotated = document.getElementById('rotate180').checked;
             let logicalSide = visualSide;
@@ -394,7 +415,6 @@
 
         // --- 模板相關函數 ---
         async function loadTemplates(){
-            // 優先讀取本地儲存
             const savedFullList = localStorage.getItem("pngTemplates_full");
             if (savedFullList) {
                 try {
@@ -408,7 +428,6 @@
                 } catch(e) { console.error("解析完整列表失敗", e); }
             }
 
-            // 本地沒有，讀取遠端 JSON
             try{
                 const response=await fetch("./templates.json");
                 if(response.ok){
@@ -421,7 +440,6 @@
                 console.log("讀取預設 templates.json 失敗:",error)
             }
 
-            // 相容舊版 localStorage
             let userTemplates=[];
             const saved=localStorage.getItem("pngTemplates");
             if(saved){try{const parsed=JSON.parse(saved);if(Array.isArray(parsed)){userTemplates=parsed}}catch(error){console.error("解析 localStorage 模板失敗:",error)}}
@@ -431,13 +449,10 @@
             renderTemplates();
         }
 
-        // [新增功能] 重置為預設模板
         async function resetToDefaultTemplates() {
             if (confirm("⚠️ 確定要刪除所有本地模板嗎？\n\n這將會：\n1. 清除您在瀏覽器中新增或排序過的所有模板。\n2. 重新讀取原始設定檔 (templates.json)。\n\n此動作無法復原！")) {
                 localStorage.removeItem("pngTemplates");
                 localStorage.removeItem("pngTemplates_full");
-                
-                // 重新呼叫 loadTemplates，它會去 fetch 最新的 json
                 await loadTemplates();
                 currentTemplateName = null;
                 document.getElementById("currentTemplate").textContent = "無";
@@ -452,30 +467,24 @@
             localStorage.setItem("pngTemplates",JSON.stringify(userTemplatesToSave));
         }
 
-        // 拖曳排序相關
         let dragSrcEl = null;
-
         function handleDragStart(e) {
             dragSrcEl = this;
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/html', this.innerHTML);
             this.classList.add('dragging');
         }
-
         function handleDragOver(e) {
             if (e.preventDefault) e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             return false;
         }
-
         function handleDragEnter(e) { this.classList.add('over'); }
         function handleDragLeave(e) { this.classList.remove('over'); }
-
         function handleDrop(e) {
             if (e.stopPropagation) e.stopPropagation();
             const sourceIndex = parseInt(dragSrcEl.getAttribute('data-index'));
             const targetIndex = parseInt(this.getAttribute('data-index'));
-
             if (dragSrcEl !== this) {
                 const movedItem = templates[sourceIndex];
                 templates.splice(sourceIndex, 1);
@@ -485,7 +494,6 @@
             }
             return false;
         }
-
         function handleDragEnd(e) {
             this.classList.remove('dragging');
             document.querySelectorAll('.template-card').forEach(item => item.classList.remove('over'));
@@ -514,20 +522,151 @@
             })
         }
 
-        function openTemplateModal(){document.getElementById("templateModal").style.display="block";document.getElementById("editIndex").value="-1";document.getElementById("templateName").value="";document.getElementById("templateFontSize").value=document.getElementById("fontSize").value;document.getElementById("templateLetterSpacing").value=document.getElementById("letterSpacing").value;document.getElementById("templatePaddingTop").value=document.getElementById("paddingTop").value;document.getElementById("templatePaddingBottom").value=document.getElementById("paddingBottom").value;document.getElementById("templatePaddingLeft").value=document.getElementById("paddingLeft").value;document.getElementById("templatePaddingRight").value=document.getElementById("paddingRight").value;document.getElementById("templateFontMode").value=fontMode;document.getElementById("templateSingleFont").value=document.getElementById("fontFamily").value;document.getElementById("templateEnglishFont").value=document.getElementById("englishFont").value;document.getElementById("templateChineseFont").value=document.getElementById("chineseFont").value;document.getElementById("templateTextColor").value=document.getElementById("textColor").value;document.getElementById("templateRotate").checked=document.getElementById("rotate180").checked;document.getElementById("templateDesc").value=""}
+        function openTemplateModal(){
+            document.getElementById("templateModal").style.display="block";
+            document.getElementById("editIndex").value="-1";
+            document.getElementById("templateName").value="";
+            document.getElementById("templateFontSize").value=document.getElementById("fontSize").value;
+            document.getElementById("templateLetterSpacing").value=document.getElementById("letterSpacing").value;
+            document.getElementById("templatePaddingTop").value=document.getElementById("paddingTop").value;
+            document.getElementById("templatePaddingBottom").value=document.getElementById("paddingBottom").value;
+            document.getElementById("templatePaddingLeft").value=document.getElementById("paddingLeft").value;
+            document.getElementById("templatePaddingRight").value=document.getElementById("paddingRight").value;
+            document.getElementById("templateFontMode").value=fontMode;
+            document.getElementById("templateSingleFont").value=document.getElementById("fontFamily").value;
+            document.getElementById("templateEnglishFont").value=document.getElementById("englishFont").value;
+            document.getElementById("templateChineseFont").value=document.getElementById("chineseFont").value;
+            document.getElementById("templateRotate").checked=document.getElementById("rotate180").checked;
+            document.getElementById("templateDesc").value="";
+            document.getElementById("templateChineseYOffset").value = document.getElementById("chineseYOffset").value;
+            document.getElementById("templateEnglishYOffset").value = document.getElementById("englishYOffset").value;
+        }
+
         function closeModal(){document.getElementById("templateModal").style.display="none"}
-        function saveTemplate(){const name=document.getElementById("templateName").value.trim();if(!name){alert("請輸入模板名稱");return}
-        const template={name:name,fontSize:parseFloat(document.getElementById("templateFontSize").value),letterSpacing:parseInt(document.getElementById("templateLetterSpacing").value),paddingTop:parseInt(document.getElementById("templatePaddingTop").value),paddingBottom:parseInt(document.getElementById("templatePaddingBottom").value),paddingLeft:parseInt(document.getElementById("templatePaddingLeft").value),paddingRight:parseInt(document.getElementById("templatePaddingRight").value),fontMode:document.getElementById("templateFontMode").value,singleFont:document.getElementById("templateSingleFont").value,englishFont:document.getElementById("templateEnglishFont").value,chineseFont:document.getElementById("templateChineseFont").value,textColor:document.getElementById("templateTextColor").value,rotate:document.getElementById("templateRotate").checked,desc:document.getElementById("templateDesc").value.trim()};const editIndex=parseInt(document.getElementById("editIndex").value);if(editIndex>=0){templates[editIndex]=template}else{templates.push(template)}
-        saveTemplatesLocal();renderTemplates();closeModal();alert("模板已儲存！")}
-        function editTemplate(index){const template=templates[index];document.getElementById("templateModal").style.display="block";document.getElementById("editIndex").value=index;document.getElementById("templateName").value=template.name;document.getElementById("templateFontSize").value=template.fontSize;document.getElementById("templateLetterSpacing").value=template.letterSpacing;document.getElementById("templatePaddingTop").value=template.paddingTop||template.paddingY||10;document.getElementById("templatePaddingBottom").value=template.paddingBottom||template.paddingY||10;document.getElementById("templatePaddingLeft").value=template.paddingLeft||template.paddingX||20;document.getElementById("templatePaddingRight").value=template.paddingRight||template.paddingX||20;document.getElementById("templateFontMode").value=template.fontMode||"single";document.getElementById("templateSingleFont").value=template.singleFont||"'Noto Sans CJK TC', sans-serif";document.getElementById("templateEnglishFont").value=template.englishFont||"'Avenir Next Condensed', sans-serif";document.getElementById("templateChineseFont").value=template.chineseFont||"'Noto Sans CJK TC', sans-serif";document.getElementById("templateTextColor").value=template.textColor||"#000000";document.getElementById("templateRotate").checked=template.rotate||false;document.getElementById("templateDesc").value=template.desc||""}
+        
+        function saveTemplate(){
+            const name=document.getElementById("templateName").value.trim();
+            if(!name){alert("請輸入模板名稱");return}
+            const template={
+                name:name,
+                fontSize:parseFloat(document.getElementById("templateFontSize").value),
+                letterSpacing:parseInt(document.getElementById("templateLetterSpacing").value),
+                paddingTop:parseInt(document.getElementById("templatePaddingTop").value),
+                paddingBottom:parseInt(document.getElementById("templatePaddingBottom").value),
+                paddingLeft:parseInt(document.getElementById("templatePaddingLeft").value),
+                paddingRight:parseInt(document.getElementById("templatePaddingRight").value),
+                fontMode:document.getElementById("templateFontMode").value,
+                singleFont:document.getElementById("templateSingleFont").value,
+                englishFont:document.getElementById("templateEnglishFont").value,
+                chineseFont:document.getElementById("templateChineseFont").value,
+                rotate:document.getElementById("templateRotate").checked,
+                desc:document.getElementById("templateDesc").value.trim(),
+                chineseYOffset: parseFloat(document.getElementById("templateChineseYOffset").value) || 0,
+                englishYOffset: parseFloat(document.getElementById("templateEnglishYOffset").value) || 0
+            };
+            const editIndex=parseInt(document.getElementById("editIndex").value);
+            if(editIndex>=0){templates[editIndex]=template}else{templates.push(template)}
+            saveTemplatesLocal();renderTemplates();closeModal();alert("模板已儲存！");
+        }
+
+        function editTemplate(index){
+            const template=templates[index];
+            document.getElementById("templateModal").style.display="block";
+            document.getElementById("editIndex").value=index;
+            document.getElementById("templateName").value=template.name;
+            document.getElementById("templateFontSize").value=template.fontSize;
+            document.getElementById("templateLetterSpacing").value=template.letterSpacing;
+            document.getElementById("templatePaddingTop").value=template.paddingTop||template.paddingY||10;
+            document.getElementById("templatePaddingBottom").value=template.paddingBottom||template.paddingY||10;
+            document.getElementById("templatePaddingLeft").value=template.paddingLeft||template.paddingX||20;
+            document.getElementById("templatePaddingRight").value=template.paddingRight||template.paddingX||20;
+            document.getElementById("templateFontMode").value=template.fontMode||"single";
+            document.getElementById("templateSingleFont").value=template.singleFont||"'Noto Sans CJK TC', sans-serif";
+            document.getElementById("templateEnglishFont").value=template.englishFont||"'Avenir Next Condensed', sans-serif";
+            document.getElementById("templateChineseFont").value=template.chineseFont||"'Noto Sans CJK TC', sans-serif";
+            document.getElementById("templateRotate").checked=template.rotate||false;
+            document.getElementById("templateDesc").value=template.desc||"";
+            document.getElementById("templateChineseYOffset").value = template.chineseYOffset || 0;
+            document.getElementById("templateEnglishYOffset").value = template.englishYOffset || 0;
+        }
+
         function deleteTemplate(index){if(confirm("確定要刪除這個模板嗎？")){templates.splice(index,1);saveTemplatesLocal();renderTemplates()}}
-        function applyTemplate(template){if(currentTemplateName===template.name){currentTemplateName=null;document.getElementById("currentTemplate").textContent="無";renderTemplates();alert("已取消選擇模板");return}
-        document.getElementById("fontSize").value=template.fontSize;document.getElementById("letterSpacing").value=template.letterSpacing;document.getElementById("paddingTop").value=template.paddingTop||template.paddingY||10;document.getElementById("paddingBottom").value=template.paddingBottom||template.paddingY||10;document.getElementById("paddingLeft").value=template.paddingLeft||template.paddingX||20;document.getElementById("paddingRight").value=template.paddingRight||template.paddingX||20;document.getElementById("textColor").value=template.textColor||"#000000";document.getElementById("rotate180").checked=template.rotate||false;document.getElementById("chineseYOffset").value=template.chineseYOffset||0;document.getElementById("englishYOffset").value=template.englishYOffset||0;const fontModeToApply=template.fontMode||"single";const modeButtonIndex=fontModeToApply==="dual"?1:0;document.querySelectorAll(".font-mode-btn")[modeButtonIndex].click();if(fontModeToApply==="dual"){document.getElementById("englishFont").value=template.englishFont||"'Avenir Next Condensed', sans-serif";document.getElementById("chineseFont").value=template.chineseFont||"'Noto Sans CJK TC', sans-serif"}else{document.getElementById("fontFamily").value=template.singleFont||"'Noto Sans CJK TC', sans-serif"}
-        currentTemplateName=template.name;document.getElementById("currentTemplate").textContent=template.name;renderTemplates();updateCanvas();alert(`已套用模板：${template.name}`)}
+        
+        function applyTemplate(template){
+            if(currentTemplateName===template.name){currentTemplateName=null;document.getElementById("currentTemplate").textContent="無";renderTemplates();alert("已取消選擇模板");return}
+            document.getElementById("fontSize").value=template.fontSize;
+            document.getElementById("letterSpacing").value=template.letterSpacing;
+            document.getElementById("paddingTop").value=template.paddingTop||template.paddingY||10;
+            document.getElementById("paddingBottom").value=template.paddingBottom||template.paddingY||10;
+            document.getElementById("paddingLeft").value=template.paddingLeft||template.paddingX||20;
+            document.getElementById("paddingRight").value=template.paddingRight||template.paddingX||20;
+            
+            document.getElementById("rotate180").checked=template.rotate||false;
+            
+            // [關鍵] 套用模板數值，並暫時解鎖，讓 updateCanvas 邏輯可以捕捉到新值
+            document.getElementById("chineseYOffset").value = template.chineseYOffset || 0;
+            document.getElementById("englishYOffset").value = template.englishYOffset || 0;
+            yOffsetsDisabled = false;
+            document.getElementById("chineseYOffset").disabled = false;
+            document.getElementById("englishYOffset").disabled = false;
+
+            const fontModeToApply=template.fontMode||"single";
+            const modeButtonIndex=fontModeToApply==="dual"?1:0;
+            document.querySelectorAll(".font-mode-btn")[modeButtonIndex].click();
+            if(fontModeToApply==="dual"){
+                document.getElementById("englishFont").value=template.englishFont||"'Avenir Next Condensed', sans-serif";
+                document.getElementById("chineseFont").value=template.chineseFont||"'Noto Sans CJK TC', sans-serif";
+            }else{
+                document.getElementById("fontFamily").value=template.singleFont||"'Noto Sans CJK TC', sans-serif";
+            }
+            currentTemplateName=template.name;
+            document.getElementById("currentTemplate").textContent=template.name;
+            renderTemplates();
+            updatePaddingLabels();
+            updateCanvas();
+            alert(`已套用模板：${template.name}`);
+        }
+
         function exportTemplates(){if(templates.length===0){alert("沒有可匯出的模板");return}
         const dataStr=JSON.stringify(templates,null,2);const dataBlob=new Blob([dataStr],{type:"application/json"});const url=URL.createObjectURL(dataBlob);const link=document.createElement("a");link.href=url;link.download=`templates-${Date.now()}.json`;link.click();URL.revokeObjectURL(url)}
         function importTemplates(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader;reader.onload=function(e){try{const imported=JSON.parse(e.target.result);if(Array.isArray(imported)){templates=templates.concat(imported);saveTemplatesLocal();renderTemplates();alert("模板匯入成功！")}else{alert("匯入失敗：檔案格式無效")}}catch(error){alert("匯入失敗：檔案格式錯誤")}};reader.readAsText(file);event.target.value=""}
         
+        // [新增] 處理 Y 軸偏移輸入框的自動啟用/禁用與數值還原邏輯
+        function handleYOffsetLogic(isMixed) {
+            const chInput = document.getElementById('chineseYOffset');
+            const enInput = document.getElementById('englishYOffset');
+
+            if (isMixed) {
+                if (yOffsetsDisabled) {
+                    // 從單語變混合：還原儲存的數值並解鎖
+                    chInput.value = savedChineseY;
+                    enInput.value = savedEnglishY;
+                    chInput.disabled = false;
+                    enInput.disabled = false;
+                    yOffsetsDisabled = false;
+                } else {
+                    // 已經是混合狀態：持續記錄使用者手動調整的數值
+                    savedChineseY = parseFloat(chInput.value) || 0;
+                    savedEnglishY = parseFloat(enInput.value) || 0;
+                }
+            } else {
+                if (!yOffsetsDisabled) {
+                    // 從混合變單語：先存起來，再歸零鎖定
+                    savedChineseY = parseFloat(chInput.value) || 0;
+                    savedEnglishY = parseFloat(enInput.value) || 0;
+                    
+                    chInput.value = 0;
+                    enInput.value = 0;
+                    chInput.disabled = true;
+                    enInput.disabled = true;
+                    yOffsetsDisabled = true;
+                }
+                // 已經是單語狀態：確保數值為 0（防止異步問題）
+                if (parseFloat(chInput.value) !== 0) chInput.value = 0;
+                if (parseFloat(enInput.value) !== 0) enInput.value = 0;
+            }
+        }
+
         // --- Canvas 核心繪圖函數 ---
         async function updateCanvas() {
             await document.fonts.ready;
@@ -550,9 +689,15 @@
             const singleFont = document.getElementById('fontFamily').value;
             const englishFont = document.getElementById('englishFont').value;
             const chineseFont = document.getElementById('chineseFont').value;
-            const chineseYOffset = parseFloat(document.getElementById('chineseYOffset').value) || 0;
-            const englishYOffset = parseFloat(document.getElementById('englishYOffset').value) || 0;
             const showGuides = document.getElementById('showAlignmentGuides').checked;
+
+            // [新增] 執行 UI 連動邏輯
+            const isMixed = hasChinese(text) && hasNonChinese(text);
+            handleYOffsetLogic(isMixed);
+            
+            // 現在可以直接讀取輸入框數值，因為 handleYOffsetLogic 已經確保單語時為 0，混合時為設定值
+            const effectiveChineseYOffset = parseFloat(document.getElementById('chineseYOffset').value) || 0;
+            const effectiveEnglishYOffset = parseFloat(document.getElementById('englishYOffset').value) || 0;
 
             const tempCtx = document.createElement('canvas').getContext('2d');
             let coreWidth = 0;
@@ -602,7 +747,8 @@
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 const isCharChinese = isChinese(char);
-                const yOffset = isCharChinese ? chineseYOffset : englishYOffset;
+                // 使用從 UI 讀取到的（可能是 0 或設定值）
+                const yOffset = isCharChinese ? effectiveChineseYOffset : effectiveEnglishYOffset;
                 const font = fontMode === 'dual' ? (isCharChinese ? chineseFont : englishFont) : singleFont;
                 ctx.font = `${fontSize}px ${font}`;
                 ctx.fillText(char, x, stable_alphabetic_baseline + yOffset);
@@ -628,7 +774,7 @@
                     const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
                     const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
                     
-                    const baseline = stable_alphabetic_baseline + englishYOffset;
+                    const baseline = stable_alphabetic_baseline + effectiveEnglishYOffset;
                     const top = baseline - ascent;
                     const bottom = baseline + descent;
                     const middle = top + (ascent + descent) / 2;
@@ -643,7 +789,7 @@
                     const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
                     const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
 
-                    const baseline = stable_alphabetic_baseline + chineseYOffset;
+                    const baseline = stable_alphabetic_baseline + effectiveChineseYOffset;
                     const top = baseline - ascent;
                     const bottom = baseline + descent;
                     const middle = top + (ascent + descent) / 2;
@@ -652,7 +798,8 @@
                 }
             }
             
-            document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvasWidth)} × ${Math.round(canvasHeight)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}`;
+            const mixInfo = isMixed ? " (混排修正開啟)" : " (單一語系-偏移停用)";
+            document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvasWidth)} × ${Math.round(canvasHeight)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}${mixInfo}`;
         }
 
         // --- 下載函數 ---
