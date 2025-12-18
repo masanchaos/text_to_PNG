@@ -53,12 +53,10 @@
         .checkbox-group { display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-top: 10px; }
         input[type="checkbox"] { width: auto; margin-right: 8px; }
         
-        /* 預覽區 Grid 佈局 [修改] 增加行列尺寸以容納垂直/水平排列的按鈕 */
+        /* 預覽區 Grid 佈局 */
         .preview-grid {
             display: grid;
-            /* 改為 90px 寬度 */
             grid-template-columns: 90px 1fr 90px; 
-            /* 改為 90px 高度 */
             grid-template-rows: 90px auto 90px;
             gap: 10px;
             align-items: center;
@@ -438,6 +436,9 @@
         function isChinese(char) { const code = char.charCodeAt(0); return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF) || (code >= 0x3000 && code <= 0x303F) || (code >= 0xFF00 && code <= 0xFFEF) || (code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF) || (code >= 0xAC00 && code <= 0xD7AF); }
         function hasChinese(text) { for (let i = 0; i < text.length; i++) { if (isChinese(text[i])) return true; } return false; }
         function hasNonChinese(text) { for (let i = 0; i < text.length; i++) { if (!isChinese(text[i])) return true; } return false; }
+        // [新增] 檢測是否有英文字母 (不包含數字/符號)
+        function hasEnglish(text) { return /[a-zA-Z]/.test(text); }
+        
         function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); const downloadBtn = document.getElementById('downloadBtn'); counter.textContent = `${count} / 22`; if (count > 22) { counter.className = 'char-counter error'; downloadBtn.disabled = true; } else { counter.className = 'char-counter'; downloadBtn.disabled = false; } }
 
         // --- 模板相關函數 ---
@@ -721,7 +722,8 @@
             const chineseFont = document.getElementById('chineseFont').value;
             const showGuides = document.getElementById('showAlignmentGuides').checked;
 
-            const isMixed = hasChinese(text) && hasNonChinese(text);
+            // [修改] 混排偵測邏輯：數字不算英文
+            const isMixed = hasChinese(text) && hasEnglish(text);
             handleYOffsetLogic(isMixed);
             
             const effectiveChineseYOffset = parseFloat(document.getElementById('chineseYOffset').value) || 0;
