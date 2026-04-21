@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文字轉PNG轉換器</title>
+    <title>極山專用刻字轉換器</title>
     <style>
         /* 載入您指定的 .woff2 格式字體 */
         @font-face {
@@ -27,31 +27,35 @@
           src: url('./fonts/MicrosoftJhengHei.woff2') format('woff2');
         }
 
-        /* 通用樣式 */
+        /* 通用樣式 — 專業配色 (slate/navy) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans CJK TC', '微軟正黑體', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-        .header h1 { font-size: 2em; margin-bottom: 10px; }
-        .content { padding: 30px; }
-        .section { margin-bottom: 30px; padding: 20px; background: #f8f9ff; border-radius: 10px; }
-        .section-title { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #333; }
-        input, select, textarea { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-top: 5px; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; }
-        input:disabled { background-color: #eee; color: #999; cursor: not-allowed; }
-        
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s; font-size: 14px; }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .btn-secondary { background: white; color: #667eea; border: 2px solid #667eea; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .info-box { padding: 10px; background: #fff8e1; border-radius: 8px; font-size: 13px; color: #f57c00; margin-top: 15px; }
-        .char-counter { text-align: right; font-size: 14px; margin-top: 5px; color: #666; }
-        .char-counter.error { color: #ff5252; font-weight: bold; }
-        .checkbox-group { display: flex; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-top: 10px; }
-        input[type="checkbox"] { width: auto; margin-right: 8px; }
+        body { font-family: 'Noto Sans CJK TC', '微軟正黑體', -apple-system, BlinkMacSystemFont, sans-serif; background: #f1f5f9; color: #0f172a; min-height: 100vh; padding: 24px; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 4px 24px rgba(15,23,42,0.06); overflow: hidden; border: 1px solid #e2e8f0; }
+        .header { background: #0f172a; color: white; padding: 28px 32px; text-align: left; border-bottom: 3px solid #1e293b; }
+        .header h1 { font-size: 1.6em; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
+        .header p { color: #94a3b8; font-size: 0.875em; font-weight: 400; }
+        .content { padding: 28px 32px; }
+        .section { margin-bottom: 20px; padding: 20px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .section-title { font-size: 0.95em; font-weight: 600; margin-bottom: 14px; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em; }
+        label { font-size: 13px; color: #475569; font-weight: 500; }
+        input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; margin-top: 6px; background: white; color: #0f172a; font-family: inherit; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #1e293b; box-shadow: 0 0 0 3px rgba(30,41,59,0.08); }
+        input:disabled { background-color: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; }
+        .btn { padding: 8px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; font-size: 13px; font-family: inherit; }
+        .btn-primary { background: #1e293b; color: white; }
+        .btn-primary:hover { background: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .btn-secondary { background: white; color: #1e293b; border: 1px solid #cbd5e1; }
+        .btn-secondary:hover { background: #f8fafc; border-color: #1e293b; }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .info-box { padding: 10px 12px; background: #f1f5f9; border-left: 3px solid #64748b; border-radius: 3px; font-size: 12.5px; color: #475569; margin-top: 14px; line-height: 1.5; }
+        .char-counter { text-align: right; font-size: 12px; margin-top: 6px; color: #64748b; font-variant-numeric: tabular-nums; }
+        .char-counter.error { color: #dc2626; font-weight: 600; }
+        .checkbox-group { display: flex; align-items: center; padding: 10px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 5px; margin-top: 10px; }
+        .checkbox-group label { color: #334155; font-size: 13px; }
+        input[type="checkbox"] { width: auto; margin-right: 8px; accent-color: #1e293b; }
         
         /* 預覽區 Grid 佈局 */
         .preview-grid {
@@ -95,9 +99,9 @@
             transition: all 0.2s;
         }
         .margin-btn:hover {
-            background: #667eea;
+            background: #1e293b;
             color: white;
-            border-color: #667eea;
+            border-color: #1e293b;
         }
         .margin-label {
             font-size: 10px;
@@ -129,71 +133,78 @@
         #textCanvas { z-index: 1; }
         #guideCanvas { z-index: 2; pointer-events: none; }
         
-        .font-mode-toggle { display: flex; gap: 10px; margin-bottom: 15px; }
-        .font-mode-btn { flex: 1; padding: 10px; border: 2px solid #e0e0e0; background: white; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
-        .font-mode-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        .font-mode-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+        .font-mode-btn { flex: 1; padding: 9px; border: 1px solid #cbd5e1; background: white; border-radius: 5px; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; font-size: 13px; font-weight: 500; color: #475569; font-family: inherit; }
+        .font-mode-btn:hover { border-color: #1e293b; color: #1e293b; }
+        .font-mode-btn.active { background: #1e293b; color: white; border-color: #1e293b; }
         .font-settings { display: none; }
         .font-settings.active { display: block; }
-        
-        /* 模板拖曳相關樣式 */
-        .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 15px; }
-        
-        .template-card { 
-            padding: 15px; 
-            background: white; 
-            border-radius: 8px; 
-            border: 2px solid #e0e0e0; 
-            cursor: pointer; 
-            text-align: center; 
-            transition: all 0.3s; 
-            position: relative; 
-            height: 150px; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-        }
-        .template-card:hover { border-color: #667eea; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .template-card.active { border-color: #667eea; background: #f0f2ff; }
-        .template-card.dragging { opacity: 0.4; border: 2px dashed #667eea; }
-        
-        .add-template-card { 
-            padding: 15px; 
-            background: #fff; 
-            border: 2px dashed #667eea; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            text-align: center; 
-            transition: all 0.3s; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 150px;
-        }
-        .add-template-card:hover { background: #f0f2ff; border-color: #764ba2; transform: translateY(-2px); }
-        
-        .delete-btn, .edit-btn { position: absolute; top: 5px; width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer; display: none; color: white; font-size: 12px; }
-        .delete-btn { right: 5px; background: #ff5252; }
-        .edit-btn { right: 35px; background: #667eea; }
-        .template-card:hover .delete-btn, .template-card:hover .edit-btn { display: block; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: white; margin: 3% auto; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close:hover { color: #000; }
-        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; color: white; transition: opacity 0.3s; }
-        #loadingBox { width: 90%; max-width: 400px; text-align: center; }
-        #loadingMessage { font-size: 1.2em; margin-bottom: 15px; }
-        #progressBarContainer { width: 100%; background: #444; border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
-        #progressBar { width: 0%; height: 10px; background: #667eea; transition: width 0.2s ease-out; }
-        #fontStatus { font-size: 0.9em; height: 20px; color: #ccc; }
 
-        .stepper { display: flex; align-items: center; border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; margin-top: 5px; }
-        .stepper:focus-within { border-color: #667eea; }
-        .stepper input { width: 100%; border: none; text-align: center; margin: 0; padding: 8px 0; -moz-appearance: textfield; }
+        /* 模板：依「代」分組，每組獨立一行 */
+        .template-grid { margin-top: 14px; }
+        .template-generation { margin-top: 18px; }
+        .template-generation:first-child { margin-top: 0; }
+        .gen-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; padding-left: 2px; }
+        .template-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+
+        .template-card {
+            padding: 14px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            text-align: center;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+            position: relative;
+            min-height: 130px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .template-card:hover { border-color: #1e293b; box-shadow: 0 2px 8px rgba(15,23,42,0.08); }
+        .template-card.active { border-color: #1e293b; background: #f1f5f9; box-shadow: inset 0 0 0 1px #1e293b; }
+        .template-card.dragging { opacity: 0.4; border: 1px dashed #1e293b; }
+
+        .add-template-card {
+            padding: 14px;
+            background: #fff;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 130px;
+            color: #64748b;
+        }
+        .add-template-card:hover { background: #f8fafc; border-color: #1e293b; color: #1e293b; }
+
+        .delete-btn, .edit-btn { position: absolute; top: 6px; width: 22px; height: 22px; border-radius: 3px; border: none; cursor: pointer; display: none; color: white; font-size: 11px; font-weight: bold; }
+        .delete-btn { right: 6px; background: #dc2626; }
+        .edit-btn { right: 32px; background: #1e293b; }
+        .template-card:hover .delete-btn, .template-card:hover .edit-btn { display: block; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15,23,42,0.55); }
+        .modal-content { background-color: white; margin: 3% auto; padding: 28px 32px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .close { color: #94a3b8; float: right; font-size: 26px; font-weight: 400; cursor: pointer; line-height: 1; }
+        .close:hover { color: #0f172a; }
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.92); z-index: 2000; display: flex; align-items: center; justify-content: center; color: white; transition: opacity 0.3s; }
+        #loadingBox { width: 90%; max-width: 400px; text-align: center; }
+        #loadingMessage { font-size: 1.05em; margin-bottom: 15px; font-weight: 500; }
+        #progressBarContainer { width: 100%; background: #334155; border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+        #progressBar { width: 0%; height: 6px; background: #e2e8f0; transition: width 0.2s ease-out; }
+        #fontStatus { font-size: 0.85em; height: 20px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+        .stepper { display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 6px; background: white; }
+        .stepper:focus-within { border-color: #1e293b; box-shadow: 0 0 0 3px rgba(30,41,59,0.08); }
+        .stepper input { width: 100%; border: none; text-align: center; margin: 0; padding: 8px 0; -moz-appearance: textfield; background: transparent; box-shadow: none; }
+        .stepper input:focus { box-shadow: none; }
         .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .stepper-btn { background: #f0f2ff; border: none; cursor: pointer; font-size: 18px; color: #667eea; font-weight: bold; transition: background 0.2s; width: 34px; height: 38px; flex-shrink: 0; user-select: none; }
-        .stepper-btn:hover { background: #dfe3ff; }
+        .stepper-btn { background: #f8fafc; border: none; cursor: pointer; font-size: 16px; color: #475569; font-weight: 600; transition: background 0.15s, color 0.15s; width: 32px; height: 36px; flex-shrink: 0; user-select: none; }
+        .stepper-btn:hover { background: #e2e8f0; color: #0f172a; }
     </style>
 </head>
 <body>
@@ -206,34 +217,32 @@
     </div>
 
     <div class="container">
-        <div class="header"><h1>✨ 文字轉PNG轉換器</h1><p>自定義模板 • 22字元限制 • 透明背景 • 中英分離字體</p></div>
+        <div class="header"><h1>極山專用刻字轉換器</h1><p>自訂模板 · 22 字元限制 · 透明背景 · 中英分離字體</p></div>
         <div class="content">
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div class="section-title">🎨 自定義模板</div>
+                    <div class="section-title">模板管理</div>
                     <div>
-                        <button class="btn btn-secondary" onclick="exportTemplates()">📤 匯出</button>
-                        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin: 0 10px;">📥 匯入</button>
-                        <button class="btn btn-secondary" onclick="resetToDefaultTemplates()" style="border-color: #ff5252; color: #ff5252;">🧹 重置預設</button>
+                        <button class="btn btn-secondary" onclick="exportTemplates()">匯出</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin: 0 8px;">匯入</button>
+                        <button class="btn btn-secondary" onclick="resetToDefaultTemplates()" style="border-color: #dc2626; color: #dc2626;">重置預設</button>
                         <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importTemplates(event)">
-                        <button class="btn btn-primary" onclick="openTemplateModal()" style="margin-left: 10px;">+ 新增模板</button>
+                        <button class="btn btn-primary" onclick="openTemplateModal()" style="margin-left: 8px;">＋ 新增模板</button>
                     </div>
                 </div>
-                <div class="info-box" style="margin-bottom: 10px;">💡 <strong>提示：</strong>可拖曳卡片重新排序。點擊模板套用所有設定。「重置預設」可清除本地紀錄並重新讀取遠端模板。</div>
-                <div class="template-grid" id="templateGrid">
-                    <div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>
-                </div>
-                <div class="info-box">當前使用模板：<span id="currentTemplate">無</span></div>
+                <div class="info-box" style="margin-bottom: 10px;">可拖曳卡片重新排序，點擊模板即套用所有設定。「重置預設」可清除本地紀錄並重新讀取遠端模板。</div>
+                <div class="template-grid" id="templateGrid"></div>
+                <div class="info-box">當前使用模板：<span id="currentTemplate" style="font-weight: 600; color: #0f172a;">無</span></div>
             </div>
 
             <div class="section">
-                <div style="margin-bottom: 20px;">
-                    <label for="shippingNumberInput" style="display: block; text-align: left; margin-bottom: 5px; font-weight: bold; color: #333;">📦 寄件編號 (檔名前綴)</label>
+                <div style="margin-bottom: 18px;">
+                    <label for="shippingNumberInput" style="display: block; text-align: left; margin-bottom: 4px; font-weight: 600; color: #334155;">寄件編號（檔名前綴）</label>
                     <input type="text" id="shippingNumberInput" placeholder="選填，將作為下載檔名的開頭">
                 </div>
-                <div class="section-title">輸入文字（最多22字元）</div>
-                <textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;">My Cute Jigglypuff</textarea>
-                <div class="char-counter" id="charCounter">14 / 22</div>
+                <div class="section-title">輸入文字（上限 22 字元）</div>
+                <textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;"></textarea>
+                <div class="char-counter" id="charCounter">0 / 22</div>
             </div>
 
             <div class="section"><div class="section-title">字體設定</div><div class="font-mode-toggle"><button class="font-mode-btn active" onclick="switchFontMode('single', event)">統一字體</button><button class="font-mode-btn" onclick="switchFontMode('dual', event)">中英分離</button></div>
@@ -260,9 +269,9 @@
                     <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
                     <input type="checkbox" id="showAlignmentGuides" style="margin-left: 20px;" checked><label for="showAlignmentGuides">顯示對齊輔助線</label>
                 </div>
-                <div class="info-box">📌 <strong>提示：</strong>當勾選旋轉時，上方輸入框的標籤文字會自動智慧調整。Y 軸偏移僅在「中英混排」時解鎖並生效。</div>
+                <div class="info-box">勾選旋轉時，上方邊距標籤會自動智慧調整；Y 軸偏移僅在「中英混排」時解鎖並生效。</div>
             </div>
-            <div class="section" style="text-align: center;"> <div class="section-title" style="text-align: left;">預覽與下載</div>
+            <div class="section" style="text-align: center;"> <div class="section-title" style="text-align: left;">預覽與輸出</div>
                 
                 <div class="preview-grid">
                     <div class="margin-controls" style="grid-column: 2; grid-row: 1;">
@@ -299,15 +308,15 @@
 
                 <div style="text-align: center; margin-top: 20px;">
                     <div id="folderStatus" style="font-size: 12px; color: #666; margin-bottom: 10px;">下載位置：瀏覽器預設資料夾</div>
-                    <button class="btn btn-secondary" onclick="pickDownloadFolder()" style="margin-right: 8px;">📁 選擇下載資料夾</button>
-                    <button class="btn btn-secondary" id="clearFolderBtn" onclick="clearDownloadFolder()" style="display: none; margin-right: 8px; border-color: #ff5252; color: #ff5252;">✖ 清除</button>
+                    <button class="btn btn-secondary" onclick="pickDownloadFolder()" style="margin-right: 8px;">選擇下載資料夾</button>
+                    <button class="btn btn-secondary" id="clearFolderBtn" onclick="clearDownloadFolder()" style="display: none; margin-right: 8px; border-color: #dc2626; color: #dc2626;">清除</button>
                     <button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button>
                 </div>
             </div>
         </div>
     </div>
     
-    <div id="templateModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal()">&times;</span><h2 style="margin-bottom: 20px;">📝 模板設定</h2><input type="hidden" id="editIndex" value="-1"><div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div><div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
+    <div id="templateModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal()">&times;</span><h2 style="margin-bottom: 20px; font-size: 1.25em; font-weight: 600; color: #0f172a;">模板設定</h2><input type="hidden" id="editIndex" value="-1"><div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div><div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
             <div style="margin-bottom: 15px;"><label>統一字體（統一模式用）</label><select id="templateSingleFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option><option value="Arial, sans-serif">Arial (系統)</option></select></div>
             <div class="grid-2" style="margin-bottom: 15px;"><div><label>英文字體（分離模式用）</label><select id="templateEnglishFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option><option value="Arial, sans-serif">Arial (系統)</option></select></div><div><label>中文字體</label><select id="templateChineseFont"><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option></select></div></div>
             <div class="grid-2" style="margin-bottom: 15px;">
@@ -542,27 +551,65 @@
             document.querySelectorAll('.template-card').forEach(item => item.classList.remove('over'));
         }
 
+        function createTemplateCard(template, index){
+            const card=document.createElement("div");
+            card.className="template-card";
+            card.setAttribute('draggable', 'true');
+            card.setAttribute('data-index', index);
+            card.addEventListener('dragstart', handleDragStart, false);
+            card.addEventListener('dragenter', handleDragEnter, false);
+            card.addEventListener('dragover', handleDragOver, false);
+            card.addEventListener('dragleave', handleDragLeave, false);
+            card.addEventListener('drop', handleDrop, false);
+            card.addEventListener('dragend', handleDragEnd, false);
+            if(template.name===currentTemplateName) card.classList.add("active");
+            card.innerHTML=`<button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button><button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button><div style="font-weight: 600; margin-bottom: 6px; color: #0f172a; font-size: 13px;">${template.name}</div><div style="font-size: 11.5px; color: #64748b; line-height: 1.5;">${template.fontSize}px · 字距 ${template.letterSpacing}px<br>${template.fontMode==="dual"?"中英分離":"統一字體"}${template.rotate?"<br>旋轉 180°":""}${template.desc?"<br>"+template.desc:""}</div>`;
+            card.onclick=()=>applyTemplate(template);
+            return card;
+        }
+
         function renderTemplates(){
             const grid=document.getElementById("templateGrid");
-            grid.innerHTML=`<div class="add-template-card" onclick="openTemplateModal()"><div style="font-size: 48px; color: #667eea;">+</div><div style="color: #667eea; margin-top: 10px;">新增模板</div></div>`;
-            templates.forEach((template,index)=>{
-                const card=document.createElement("div");
-                card.className="template-card";
-                card.setAttribute('draggable', 'true');
-                card.setAttribute('data-index', index);
-                
-                card.addEventListener('dragstart', handleDragStart, false);
-                card.addEventListener('dragenter', handleDragEnter, false);
-                card.addEventListener('dragover', handleDragOver, false);
-                card.addEventListener('dragleave', handleDragLeave, false);
-                card.addEventListener('drop', handleDrop, false);
-                card.addEventListener('dragend', handleDragEnd, false);
+            grid.innerHTML="";
 
-                if(template.name===currentTemplateName)card.classList.add("active");
-                card.innerHTML=`<button class="edit-btn" onclick="editTemplate(${index}); event.stopPropagation();">✎</button><button class="delete-btn" onclick="deleteTemplate(${index}); event.stopPropagation();">×</button><div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div><div style="font-size: 12px; color: #666;">${template.fontSize}px | 字距${template.letterSpacing}px<br>${template.fontMode==="dual"?"中英分離":"統一字體"}${template.rotate?"<br>旋轉180°":""}${template.desc?"<br>"+template.desc:""}</div>`;
-                card.onclick=()=>applyTemplate(template);
-                grid.appendChild(card)
-            })
+            // 依名稱中的「一代/二代/三代」分組
+            const groups={ '一':[], '二':[], '三':[], '其他':[] };
+            templates.forEach((t,i)=>{
+                const m=t.name.match(/([一二三])代/);
+                const key=m ? m[1] : '其他';
+                groups[key].push({template:t, index:i});
+            });
+
+            const genLabels={ '一':'第一代', '二':'第二代', '三':'第三代', '其他':'其他' };
+            ['一','二','三','其他'].forEach(key=>{
+                if(groups[key].length===0) return;
+                const wrapper=document.createElement('div');
+                wrapper.className='template-generation';
+                const label=document.createElement('div');
+                label.className='gen-label';
+                label.textContent=genLabels[key];
+                wrapper.appendChild(label);
+                const row=document.createElement('div');
+                row.className='template-row';
+                groups[key].forEach(({template,index})=>{
+                    row.appendChild(createTemplateCard(template,index));
+                });
+                wrapper.appendChild(row);
+                grid.appendChild(wrapper);
+            });
+
+            // 新增卡片獨立一行
+            const addWrapper=document.createElement('div');
+            addWrapper.className='template-generation';
+            const addRow=document.createElement('div');
+            addRow.className='template-row';
+            const addCard=document.createElement('div');
+            addCard.className='add-template-card';
+            addCard.onclick=openTemplateModal;
+            addCard.innerHTML=`<div style="font-size: 36px; font-weight: 300;">＋</div><div style="margin-top: 8px; font-size: 13px;">新增模板</div>`;
+            addRow.appendChild(addCard);
+            addWrapper.appendChild(addRow);
+            grid.appendChild(addWrapper);
         }
 
         function openTemplateModal(){
@@ -893,8 +940,8 @@
             const clearBtn = document.getElementById('clearFolderBtn');
             if (name) {
                 status.textContent = `下載位置：${name}`;
-                status.style.color = '#667eea';
-                status.style.fontWeight = 'bold';
+                status.style.color = '#0f172a';
+                status.style.fontWeight = '600';
                 clearBtn.style.display = 'inline-block';
             } else {
                 status.textContent = '下載位置：瀏覽器預設資料夾';
