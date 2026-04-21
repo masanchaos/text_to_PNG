@@ -297,7 +297,12 @@
 
                 <div style="text-align: center; margin-top: 10px; font-size: 12px; color: #666;" id="sizeInfo">尺寸資訊</div>
 
-                <div style="text-align: center; margin-top: 20px;"><button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <div id="folderStatus" style="font-size: 12px; color: #666; margin-bottom: 10px;">下載位置：瀏覽器預設資料夾</div>
+                    <button class="btn btn-secondary" onclick="pickDownloadFolder()" style="margin-right: 8px;">📁 選擇下載資料夾</button>
+                    <button class="btn btn-secondary" id="clearFolderBtn" onclick="clearDownloadFolder()" style="display: none; margin-right: 8px; border-color: #ff5252; color: #ff5252;">✖ 清除</button>
+                    <button class="btn btn-primary" id="downloadBtn" onclick="downloadPNG()">下載 PNG</button>
+                </div>
             </div>
         </div>
     </div>
@@ -362,6 +367,7 @@
             document.getElementById('rotate180').addEventListener('change', updatePaddingLabels);
             updatePaddingLabels();
             updateCanvas();
+            restoreFolderStatus();
         }
 
         // --- 字體載入 ---
@@ -831,12 +837,114 @@
             document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvasWidth)} × ${Math.round(canvasHeight)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}${mixInfo}`;
         }
 
+        // --- 下載資料夾 (File System Access API) ---
+        const FOLDER_DB_NAME = 'textToPngSettings';
+        const FOLDER_STORE = 'folderHandle';
+        const FOLDER_KEY = 'downloadFolder';
+
+        function openFolderDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(FOLDER_DB_NAME, 1);
+                req.onupgradeneeded = () => req.result.createObjectStore(FOLDER_STORE);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function saveFolderHandle(handle) {
+            const db = await openFolderDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(FOLDER_STORE, 'readwrite');
+                tx.objectStore(FOLDER_STORE).put(handle, FOLDER_KEY);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function loadFolderHandle() {
+            const db = await openFolderDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(FOLDER_STORE, 'readonly');
+                const req = tx.objectStore(FOLDER_STORE).get(FOLDER_KEY);
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function deleteFolderHandle() {
+            const db = await openFolderDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(FOLDER_STORE, 'readwrite');
+                tx.objectStore(FOLDER_STORE).delete(FOLDER_KEY);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function verifyFolderPermission(handle, request = false) {
+            const opts = { mode: 'readwrite' };
+            if ((await handle.queryPermission(opts)) === 'granted') return true;
+            if (request && (await handle.requestPermission(opts)) === 'granted') return true;
+            return false;
+        }
+
+        function updateFolderStatus(name) {
+            const status = document.getElementById('folderStatus');
+            const clearBtn = document.getElementById('clearFolderBtn');
+            if (name) {
+                status.textContent = `下載位置：${name}`;
+                status.style.color = '#667eea';
+                status.style.fontWeight = 'bold';
+                clearBtn.style.display = 'inline-block';
+            } else {
+                status.textContent = '下載位置：瀏覽器預設資料夾';
+                status.style.color = '#666';
+                status.style.fontWeight = 'normal';
+                clearBtn.style.display = 'none';
+            }
+        }
+
+        async function pickDownloadFolder() {
+            if (!window.showDirectoryPicker) {
+                alert('此瀏覽器不支援資料夾選擇，將使用瀏覽器預設下載資料夾。\n建議使用 Chrome 或 Edge。');
+                return;
+            }
+            try {
+                const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                await saveFolderHandle(handle);
+                updateFolderStatus(handle.name);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    alert('選擇資料夾失敗：' + err.message);
+                }
+            }
+        }
+
+        async function clearDownloadFolder() {
+            try { await deleteFolderHandle(); } catch (err) { console.error(err); }
+            updateFolderStatus(null);
+        }
+
+        async function restoreFolderStatus() {
+            if (!window.showDirectoryPicker) {
+                document.getElementById('folderStatus').textContent = '下載位置：瀏覽器預設資料夾（此瀏覽器不支援自訂資料夾）';
+                return;
+            }
+            try {
+                const handle = await loadFolderHandle();
+                if (handle) updateFolderStatus(handle.name);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
         // --- 下載函數 ---
         async function downloadPNG() {
             const finalCanvas = document.createElement('canvas');
             const finalCtx = finalCanvas.getContext('2d');
             const textCanvas = document.getElementById('textCanvas');
-            
+
             finalCanvas.width = textCanvas.width;
             finalCanvas.height = textCanvas.height;
             finalCtx.drawImage(textCanvas, 0, 0);
@@ -848,10 +956,28 @@
             const timeStr = `${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
             const timestamp = `${dateStr}${timeStr}`;
             const safeText = text.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_').substring(0, 15);
-            
+
             const filenamePrefix = shippingNumber ? `${shippingNumber}_` : '';
             const filename = `${filenamePrefix}${safeText}_${timestamp}.png`;
-            
+
+            // 若使用者已指定資料夾，嘗試寫入
+            if (window.showDirectoryPicker) {
+                try {
+                    const handle = await loadFolderHandle();
+                    if (handle && await verifyFolderPermission(handle, true)) {
+                        const blob = await new Promise(r => finalCanvas.toBlob(r, 'image/png'));
+                        const fileHandle = await handle.getFileHandle(filename, { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(blob);
+                        await writable.close();
+                        return;
+                    }
+                } catch (err) {
+                    console.error('寫入指定資料夾失敗，改用瀏覽器下載：', err);
+                }
+            }
+
+            // 後備：瀏覽器預設下載
             const link = document.createElement('a');
             link.download = filename;
             link.href = finalCanvas.toDataURL("image/png");
