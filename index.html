@@ -205,6 +205,11 @@
         .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .stepper-btn { background: #f8fafc; border: none; cursor: pointer; font-size: 16px; color: #475569; font-weight: 600; transition: background 0.15s, color 0.15s; width: 32px; height: 36px; flex-shrink: 0; user-select: none; }
         .stepper-btn:hover { background: #e2e8f0; color: #0f172a; }
+
+        /* 下載成功通知 (自動消失) */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: white; padding: 12px 18px; border-radius: 6px; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.25); opacity: 0; transform: translateY(16px); pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; z-index: 3000; display: flex; align-items: center; gap: 10px; max-width: 360px; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #22c55e; color: white; font-size: 12px; font-weight: bold; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -316,6 +321,8 @@
         </div>
     </div>
     
+    <div id="toast" class="toast"><span class="toast-icon">✓</span><span id="toastMessage"></span></div>
+
     <div id="templateModal" class="modal"><div class="modal-content"><span class="close" onclick="closeModal()">&times;</span><h2 style="margin-bottom: 20px; font-size: 1.25em; font-weight: 600; color: #0f172a;">模板設定</h2><input type="hidden" id="editIndex" value="-1"><div style="margin-bottom: 15px;"><label>模板名稱 *</label><input type="text" id="templateName" placeholder="例如：網站標題"></div><div style="margin-bottom: 15px;"><label>字體模式</label><select id="templateFontMode"><option value="single">統一字體</option><option value="dual">中英分離</option></select></div>
             <div style="margin-bottom: 15px;"><label>統一字體（統一模式用）</label><select id="templateSingleFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif">Avenir Next Condensed</option><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option><option value="Arial, sans-serif">Arial (系統)</option></select></div>
             <div class="grid-2" style="margin-bottom: 15px;"><div><label>英文字體（分離模式用）</label><select id="templateEnglishFont"><option value="'Rage Italic', cursive">Rage Italic</option><option value="'Avenir Next Condensed', sans-serif" selected>Avenir Next Condensed</option><option value="Arial, sans-serif">Arial (系統)</option></select></div><div><label>中文字體</label><select id="templateChineseFont"><option value="'Taipei Sans TC Beta', sans-serif">Taipei Sans TC Beta</option><option value="'Noto Sans CJK TC', sans-serif" selected>Noto Sans CJK TC</option><option value="'微軟正黑體', sans-serif">微軟正黑體</option></select></div></div>
@@ -986,6 +993,16 @@
             }
         }
 
+        // --- 通知 (自動消失) ---
+        let toastTimer = null;
+        function showToast(message, duration = 2500) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+        }
+
         // --- 下載函數 ---
         async function downloadPNG() {
             const finalCanvas = document.createElement('canvas');
@@ -1017,6 +1034,7 @@
                         const writable = await fileHandle.createWritable();
                         await writable.write(blob);
                         await writable.close();
+                        showToast(`已儲存至「${handle.name}」：${filename}`);
                         return;
                     }
                 } catch (err) {
@@ -1029,6 +1047,7 @@
             link.download = filename;
             link.href = finalCanvas.toDataURL("image/png");
             link.click();
+            showToast(`下載完成：${filename}`);
         }
     </script>
 </body>
