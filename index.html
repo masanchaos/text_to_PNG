@@ -132,7 +132,18 @@
         }
         #textCanvas { z-index: 1; }
         #guideCanvas { z-index: 2; pointer-events: none; }
-        
+
+        /* 邊框拖曳區：跨在 wrapper 邊界上，hover 顯示淡色提示，拖曳中加深 */
+        .resize-handle { position: absolute; z-index: 3; background: transparent; transition: background 0.15s; touch-action: none; user-select: none; }
+        .resize-handle.top    { top: -5px;    left: 0;     right: 0;  height: 10px; cursor: ns-resize; }
+        .resize-handle.bottom { bottom: -5px; left: 0;     right: 0;  height: 10px; cursor: ns-resize; }
+        .resize-handle.left   { left: -5px;   top: 0;      bottom: 0; width: 10px;  cursor: ew-resize; }
+        .resize-handle.right  { right: -5px;  top: 0;      bottom: 0; width: 10px;  cursor: ew-resize; }
+        #canvasWrapper:hover .resize-handle { background: rgba(30, 41, 59, 0.08); }
+        .resize-handle:hover { background: rgba(30, 41, 59, 0.22) !important; }
+        .resize-handle.active { background: rgba(30, 41, 59, 0.32) !important; }
+
+
         .font-mode-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
         .font-mode-btn { flex: 1; padding: 9px; border: 1px solid #cbd5e1; background: white; border-radius: 5px; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; font-size: 13px; font-weight: 500; color: #475569; font-family: inherit; }
         .font-mode-btn:hover { border-color: #1e293b; color: #1e293b; }
@@ -206,10 +217,14 @@
         .stepper-btn { background: #f8fafc; border: none; cursor: pointer; font-size: 16px; color: #475569; font-weight: 600; transition: background 0.15s, color 0.15s; width: 32px; height: 36px; flex-shrink: 0; user-select: none; }
         .stepper-btn:hover { background: #e2e8f0; color: #0f172a; }
 
-        /* 下載成功通知 (自動消失) */
-        .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: white; padding: 12px 18px; border-radius: 6px; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.25); opacity: 0; transform: translateY(16px); pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; z-index: 3000; display: flex; align-items: center; gap: 10px; max-width: 360px; }
+        /* 下載成功 / 失敗通知 (自動消失) */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: white; padding: 12px 18px; border-radius: 6px; font-size: 13px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,0.25); opacity: 0; transform: translateY(16px); pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; z-index: 3000; display: flex; align-items: center; gap: 10px; max-width: 420px; }
         .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { background: #7f1d1d; }
+        .toast.warning { background: #78350f; }
         .toast-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #22c55e; color: white; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+        .toast.error .toast-icon { background: #dc2626; }
+        .toast.warning .toast-icon { background: #d97706; }
     </style>
 </head>
 <body>
@@ -222,7 +237,7 @@
     </div>
 
     <div class="container">
-        <div class="header"><h1>極山專用刻字轉換器</h1><p>自訂模板 · 22 字元限制 · 透明背景 · 中英分離字體</p></div>
+        <div class="header"><h1>極山專用刻字轉換器</h1><p>自訂模板 · 透明背景 · 中英分離字體</p></div>
         <div class="content">
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -245,9 +260,9 @@
                     <label for="shippingNumberInput" style="display: block; text-align: left; margin-bottom: 4px; font-weight: 600; color: #334155;">寄件編號（檔名前綴）</label>
                     <input type="text" id="shippingNumberInput" placeholder="選填，將作為下載檔名的開頭">
                 </div>
-                <div class="section-title">輸入文字（上限 22 字元）</div>
-                <textarea id="textInput" placeholder="請輸入要轉換的文字..." maxlength="50" style="height: 100px;"></textarea>
-                <div class="char-counter" id="charCounter">0 / 22</div>
+                <div class="section-title">輸入文字</div>
+                <textarea id="textInput" placeholder="請輸入要轉換的文字..." style="height: 100px;"></textarea>
+                <div class="char-counter" id="charCounter">0 字元</div>
             </div>
 
             <div class="section"><div class="section-title">字體設定</div><div class="font-mode-toggle"><button class="font-mode-btn active" onclick="switchFontMode('single', event)">統一字體</button><button class="font-mode-btn" onclick="switchFontMode('dual', event)">中英分離</button></div>
@@ -294,6 +309,10 @@
                     <div id="canvasWrapper">
                         <canvas id="textCanvas"></canvas>
                         <canvas id="guideCanvas"></canvas>
+                        <div class="resize-handle top" data-side="Top" title="拖曳調整上邊距"></div>
+                        <div class="resize-handle bottom" data-side="Bottom" title="拖曳調整下邊距"></div>
+                        <div class="resize-handle left" data-side="Left" title="拖曳調整左邊距"></div>
+                        <div class="resize-handle right" data-side="Right" title="拖曳調整右邊距"></div>
                     </div>
 
                     <div class="margin-controls horizontal" style="grid-column: 3; grid-row: 2;">
@@ -384,6 +403,86 @@
             updatePaddingLabels();
             updateCanvas();
             restoreFolderStatus();
+            initResizeHandles();
+        }
+
+        // --- 邊框拖曳調整 padding ---
+        // 視覺側 -> 邏輯側：旋轉 180° 時上下互換、左右互換（與 smartAdjustPadding 一致）
+        function visualToLogicalSide(visualSide) {
+            const isRotated = document.getElementById('rotate180').checked;
+            if (!isRotated) return visualSide;
+            if (visualSide === 'Top') return 'Bottom';
+            if (visualSide === 'Bottom') return 'Top';
+            if (visualSide === 'Left') return 'Right';
+            if (visualSide === 'Right') return 'Left';
+            return visualSide;
+        }
+
+        function initResizeHandles() {
+            const wrapper = document.getElementById('canvasWrapper');
+            const handles = wrapper.querySelectorAll('.resize-handle');
+            // wrapper 用 transform: scale(1.3) 放大顯示，滑鼠座標是 CSS 像素，
+            // 需要除以縮放倍率才會等於 canvas 內部像素（= padding 單位）
+            const WRAPPER_SCALE = 1.3;
+            let dragging = null;
+
+            handles.forEach(handle => {
+                handle.addEventListener('pointerdown', (e) => {
+                    if (e.button !== undefined && e.button !== 0) return;
+                    e.preventDefault();
+                    try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+                    handle.classList.add('active');
+
+                    const visualSide = handle.dataset.side;
+                    const logicalSide = visualToLogicalSide(visualSide);
+                    const input = document.getElementById('padding' + logicalSide);
+                    const maxVal = parseInt(input.getAttribute('max'), 10);
+                    const minVal = parseInt(input.getAttribute('min'), 10);
+                    dragging = {
+                        handle,
+                        visualSide,
+                        input,
+                        startX: e.clientX,
+                        startY: e.clientY,
+                        startValue: parseInt(input.value, 10) || 0,
+                        maxVal: Number.isFinite(maxVal) ? maxVal : 200,
+                        minVal: Number.isFinite(minVal) ? minVal : 0
+                    };
+                });
+
+                handle.addEventListener('pointermove', (e) => {
+                    if (!dragging || dragging.handle !== handle) return;
+                    const dxCss = (e.clientX - dragging.startX) / WRAPPER_SCALE;
+                    const dyCss = (e.clientY - dragging.startY) / WRAPPER_SCALE;
+                    let delta;
+                    switch (dragging.visualSide) {
+                        case 'Top':    delta = -dyCss; break; // 往上拉 = 變大
+                        case 'Bottom': delta =  dyCss; break; // 往下拉 = 變大
+                        case 'Left':   delta = -dxCss; break; // 往左拉 = 變大
+                        case 'Right':  delta =  dxCss; break; // 往右拉 = 變大
+                        default:       delta = 0;
+                    }
+                    let newVal = Math.round(dragging.startValue + delta);
+                    if (newVal < dragging.minVal) newVal = dragging.minVal;
+                    if (newVal > dragging.maxVal) newVal = dragging.maxVal;
+                    if (newVal !== (parseInt(dragging.input.value, 10) || 0)) {
+                        dragging.input.value = newVal;
+                        dragging.input.dispatchEvent(new Event('input'));
+                    }
+                });
+
+                const endDrag = (e) => {
+                    if (!dragging || dragging.handle !== handle) return;
+                    try {
+                        if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+                    } catch (_) {}
+                    handle.classList.remove('active');
+                    dragging = null;
+                };
+                handle.addEventListener('pointerup', endDrag);
+                handle.addEventListener('pointercancel', endDrag);
+                handle.addEventListener('lostpointercapture', endDrag);
+            });
         }
 
         // --- 字體載入 ---
@@ -461,7 +560,7 @@
         // [新增] 檢測是否有英文字母 (不包含數字/符號)
         function hasEnglish(text) { return /[a-zA-Z]/.test(text); }
         
-        function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); const downloadBtn = document.getElementById('downloadBtn'); counter.textContent = `${count} / 22`; if (count > 22) { counter.className = 'char-counter error'; downloadBtn.disabled = true; } else { counter.className = 'char-counter'; downloadBtn.disabled = false; } }
+        function checkCharCount() { const text = document.getElementById('textInput').value; const count = text.length; const counter = document.getElementById('charCounter'); counter.textContent = `${count} 字元`; counter.className = 'char-counter'; }
 
         // --- 模板相關函數 ---
         async function loadTemplates(){
@@ -995,59 +1094,159 @@
 
         // --- 通知 (自動消失) ---
         let toastTimer = null;
-        function showToast(message, duration = 2500) {
+        function showToast(message, duration = 2500, type = 'success') {
             const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.toast-icon');
             document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('error', 'warning');
+            if (type === 'error') {
+                toast.classList.add('error');
+                icon.textContent = '!';
+            } else if (type === 'warning') {
+                toast.classList.add('warning');
+                icon.textContent = '!';
+            } else {
+                icon.textContent = '✓';
+            }
             toast.classList.add('show');
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
         }
 
         // --- 下載函數 ---
-        async function downloadPNG() {
-            const finalCanvas = document.createElement('canvas');
-            const finalCtx = finalCanvas.getContext('2d');
-            const textCanvas = document.getElementById('textCanvas');
+        // 包成 Promise 並驗證 blob，避免大畫布時 toBlob 回傳 null 而靜默失敗
+        function canvasToBlobSafe(canvas) {
+            return new Promise((resolve, reject) => {
+                try {
+                    canvas.toBlob(b => {
+                        if (b) resolve(b);
+                        else reject(new Error('Canvas 轉換 PNG 失敗（toBlob 回傳空值，可能尺寸過大）'));
+                    }, 'image/png');
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }
 
-            finalCanvas.width = textCanvas.width;
-            finalCanvas.height = textCanvas.height;
-            finalCtx.drawImage(textCanvas, 0, 0);
-
+        function buildFilename() {
             const shippingNumber = document.getElementById('shippingNumberInput').value.trim();
             const text = document.getElementById('textInput').value;
             const date = new Date();
-            const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
-            const timeStr = `${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}${String(date.getSeconds()).padStart(2, '0')}`;
-            const timestamp = `${dateStr}${timeStr}`;
-            const safeText = text.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_').substring(0, 15);
-
+            const pad = (n, w = 2) => String(n).padStart(w, '0');
+            const dateStr = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+            // 加上毫秒，避免使用者連點兩次時兩個 PNG 同名互相覆蓋 / 殘留
+            const timeStr = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}${pad(date.getMilliseconds(), 3)}`;
+            const safeText = text.replace(/[^a-zA-Z0-9一-龥]/g, '_').substring(0, 15) || 'text';
             const filenamePrefix = shippingNumber ? `${shippingNumber}_` : '';
-            const filename = `${filenamePrefix}${safeText}_${timestamp}.png`;
+            return `${filenamePrefix}${safeText}_${dateStr}${timeStr}.png`;
+        }
 
-            // 若使用者已指定資料夾，嘗試寫入
-            if (window.showDirectoryPicker) {
-                try {
-                    const handle = await loadFolderHandle();
-                    if (handle && await verifyFolderPermission(handle, true)) {
-                        const blob = await new Promise(r => finalCanvas.toBlob(r, 'image/png'));
-                        const fileHandle = await handle.getFileHandle(filename, { create: true });
-                        const writable = await fileHandle.createWritable();
-                        await writable.write(blob);
-                        await writable.close();
-                        showToast(`已儲存至「${handle.name}」：${filename}`);
-                        return;
-                    }
-                } catch (err) {
-                    console.error('寫入指定資料夾失敗，改用瀏覽器下載：', err);
-                }
-            }
-
-            // 後備：瀏覽器預設下載
+        // 從 Blob 而非 dataURL 觸發下載；dataURL 在大圖時可能失敗或被瀏覽器阻擋
+        function fallbackBrowserDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = filename;
-            link.href = finalCanvas.toDataURL("image/png");
+            link.href = url;
+            document.body.appendChild(link);
             link.click();
-            showToast(`下載完成：${filename}`);
+            document.body.removeChild(link);
+            // 延後釋放，確保瀏覽器已開始下載
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+        }
+
+        // 寫入指定資料夾；try/finally 確保 writable 異常時被 abort，避免殘留 .crswap 暫存檔
+        async function writeBlobToHandle(handle, filename, blob) {
+            const fileHandle = await handle.getFileHandle(filename, { create: true });
+            let writable = null;
+            try {
+                writable = await fileHandle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                writable = null;
+            } finally {
+                if (writable) {
+                    try { await writable.abort(); } catch (_) { /* ignore */ }
+                }
+            }
+        }
+
+        let isDownloading = false;
+        async function downloadPNG() {
+            if (isDownloading) return;
+            isDownloading = true;
+
+            const downloadBtn = document.getElementById('downloadBtn');
+            const originalBtnText = downloadBtn.textContent;
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = '下載中…';
+
+            try {
+                const textCanvas = document.getElementById('textCanvas');
+                if (!textCanvas.width || !textCanvas.height) {
+                    showToast('畫布尚未準備好，請稍候再試', 3500, 'error');
+                    return;
+                }
+
+                const finalCanvas = document.createElement('canvas');
+                const finalCtx = finalCanvas.getContext('2d');
+                finalCanvas.width = textCanvas.width;
+                finalCanvas.height = textCanvas.height;
+                finalCtx.drawImage(textCanvas, 0, 0);
+
+                const filename = buildFilename();
+
+                let blob;
+                try {
+                    blob = await canvasToBlobSafe(finalCanvas);
+                } catch (err) {
+                    console.error(err);
+                    showToast(`下載失敗：${err.message}`, 4000, 'error');
+                    return;
+                }
+
+                if (window.showDirectoryPicker) {
+                    const handle = await loadFolderHandle();
+                    if (handle) {
+                        const hasPermission = await verifyFolderPermission(handle, true);
+                        if (!hasPermission) {
+                            showToast(`「${handle.name}」資料夾權限被拒絕，已改用瀏覽器預設下載`, 5000, 'warning');
+                            fallbackBrowserDownload(blob, filename);
+                            return;
+                        }
+
+                        try {
+                            await writeBlobToHandle(handle, filename, blob);
+                            showToast(`已儲存至「${handle.name}」：${filename}`);
+                            return;
+                        } catch (err) {
+                            console.error('write to folder failed:', err);
+                            const code = err && err.name;
+                            let reason;
+                            if (code === 'NotFoundError') {
+                                reason = '資料夾不存在或已被移動，請重新選擇';
+                                try { await deleteFolderHandle(); } catch (_) {}
+                                updateFolderStatus(null);
+                            } else if (code === 'NotAllowedError' || code === 'SecurityError') {
+                                reason = '權限被拒絕，請重新選擇資料夾';
+                            } else if (code === 'QuotaExceededError') {
+                                reason = '磁碟空間不足';
+                            } else {
+                                reason = (err && err.message) || '未知錯誤';
+                            }
+                            showToast(`寫入資料夾失敗：${reason}，已改用瀏覽器預設下載`, 5500, 'error');
+                            fallbackBrowserDownload(blob, filename);
+                            return;
+                        }
+                    }
+                }
+
+                fallbackBrowserDownload(blob, filename);
+                showToast(`下載完成：${filename}`);
+            } finally {
+                isDownloading = false;
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = originalBtnText;
+            }
         }
     </script>
 </body>
