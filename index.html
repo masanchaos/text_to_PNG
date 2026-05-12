@@ -280,10 +280,10 @@
                     <div><label>英文 Y 軸偏移 (px)</label><input type="number" id="englishYOffset" value="0" step="0.5" title="僅在文字同時包含中文與英文時生效"></div>
                 </div>
                 <div class="grid-4">
-                    <div><label id="labelPaddingTop">上邊距 (Top)</label><input type="number" id="paddingTop" value="10" max="200"></div>
-                    <div><label id="labelPaddingBottom">下邊距 (Bottom)</label><input type="number" id="paddingBottom" value="10" max="200"></div>
-                    <div><label id="labelPaddingLeft">左邊距 (Left)</label><input type="number" id="paddingLeft" value="10" max="200"></div>
-                    <div><label id="labelPaddingRight">右邊距 (Right)</label><input type="number" id="paddingRight" value="10" max="200"></div>
+                    <div><label id="labelPaddingTop">上邊距 (Top)</label><input type="number" id="paddingTop" value="0" min="0" max="200"></div>
+                    <div><label id="labelPaddingBottom">下邊距 (Bottom)</label><input type="number" id="paddingBottom" value="0" min="0" max="200"></div>
+                    <div><label id="labelPaddingLeft">左邊距 (Left)</label><input type="number" id="paddingLeft" value="0" min="0" max="200"></div>
+                    <div><label id="labelPaddingRight">右邊距 (Right)</label><input type="number" id="paddingRight" value="0" min="0" max="200"></div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
@@ -520,12 +520,17 @@
         }
         
         // --- 輔助函數 ---
-        function adjustPadding(inputId, amount) { 
-            const input = document.getElementById(inputId); 
-            let value = parseInt(input.value, 10) || 0; 
-            value += amount; 
-            input.value = value; 
-            input.dispatchEvent(new Event('input')); 
+        function adjustPadding(inputId, amount) {
+            const input = document.getElementById(inputId);
+            let value = parseInt(input.value, 10) || 0;
+            value += amount;
+            const minVal = parseInt(input.getAttribute('min'), 10);
+            const maxVal = parseInt(input.getAttribute('max'), 10);
+            if (Number.isFinite(minVal) && value < minVal) value = minVal;
+            if (Number.isFinite(maxVal) && value > maxVal) value = maxVal;
+            if (value === (parseInt(input.value, 10) || 0)) return;
+            input.value = value;
+            input.dispatchEvent(new Event('input'));
         }
 
         function updatePaddingLabels() {
