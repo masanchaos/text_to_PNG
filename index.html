@@ -225,7 +225,98 @@
         .toast-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #22c55e; color: white; font-size: 12px; font-weight: bold; flex-shrink: 0; }
         .toast.error .toast-icon { background: #dc2626; }
         .toast.warning .toast-icon { background: #d97706; }
+
+        /* ====== 主題切換按鈕（永遠在深色 header 上，外觀不隨主題變） ====== */
+        .header { position: relative; }
+        .theme-toggle {
+            position: absolute; top: 22px; right: 24px;
+            width: 36px; height: 36px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+            color: #f1f5f9;
+            font-size: 17px; line-height: 1;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: background 0.15s, border-color 0.15s;
+            font-family: inherit;
+            user-select: none;
+        }
+        .theme-toggle:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.28); }
+        .theme-icon-moon { display: inline; }
+        .theme-icon-sun { display: none; }
+        [data-theme="dark"] .theme-icon-moon { display: none; }
+        [data-theme="dark"] .theme-icon-sun { display: inline; }
+
+        /* ====== 暗色主題：以 [data-theme="dark"] 覆寫，亮色維持原配色 ====== */
+        [data-theme="dark"] { color-scheme: dark; }
+        [data-theme="dark"] body { background: #0a0f1c; color: #e2e8f0; }
+        [data-theme="dark"] .container { background: #131a2b; border-color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 4px 24px rgba(0,0,0,0.4); }
+        [data-theme="dark"] .section { background: #0f1626; border-color: #1e293b; }
+        [data-theme="dark"] .section-title { color: #e2e8f0; }
+        [data-theme="dark"] label { color: #cbd5e1; }
+        [data-theme="dark"] input,
+        [data-theme="dark"] select,
+        [data-theme="dark"] textarea { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+        [data-theme="dark"] input:focus,
+        [data-theme="dark"] select:focus,
+        [data-theme="dark"] textarea:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,0.22); }
+        [data-theme="dark"] input::placeholder,
+        [data-theme="dark"] textarea::placeholder { color: #64748b; }
+        [data-theme="dark"] input:disabled { background: #0f172a; color: #475569; }
+        [data-theme="dark"] .info-box { background: #1e293b; color: #cbd5e1; border-left-color: #475569; }
+        [data-theme="dark"] .char-counter { color: #94a3b8; }
+        [data-theme="dark"] .checkbox-group { background: #1e293b; border-color: #334155; }
+        [data-theme="dark"] .checkbox-group label { color: #cbd5e1; }
+        [data-theme="dark"] .font-mode-btn { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+        [data-theme="dark"] .font-mode-btn:hover { border-color: #94a3b8; color: #f1f5f9; }
+        [data-theme="dark"] .font-mode-btn.active { background: #475569; color: white; border-color: #475569; }
+        [data-theme="dark"] .template-card { background: #131a2b; border-color: #1e293b; }
+        [data-theme="dark"] .template-card:hover { border-color: #475569; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+        [data-theme="dark"] .template-card.active { background: #1e293b; border-color: #94a3b8; box-shadow: inset 0 0 0 1px #94a3b8; }
+        [data-theme="dark"] .template-card div { color: inherit; }
+        [data-theme="dark"] .add-template-card { background: #131a2b; border-color: #334155; color: #94a3b8; }
+        [data-theme="dark"] .add-template-card:hover { background: #1e293b; border-color: #94a3b8; color: #e2e8f0; }
+        [data-theme="dark"] .gen-label { color: #94a3b8; }
+        [data-theme="dark"] .btn-primary { background: #475569; color: white; }
+        [data-theme="dark"] .btn-primary:hover { background: #64748b; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+        [data-theme="dark"] .btn-secondary { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+        [data-theme="dark"] .btn-secondary:hover { background: #334155; border-color: #475569; }
+        [data-theme="dark"] .stepper { background: #1e293b; border-color: #334155; }
+        [data-theme="dark"] .stepper input { background: transparent; color: #e2e8f0; }
+        [data-theme="dark"] .stepper-btn { background: #334155; color: #cbd5e1; }
+        [data-theme="dark"] .stepper-btn:hover { background: #475569; color: white; }
+        [data-theme="dark"] .modal-content { background: #131a2b; border-color: #1e293b; color: #e2e8f0; }
+        [data-theme="dark"] .modal-content h2 { color: #e2e8f0; }
+        [data-theme="dark"] .close { color: #64748b; }
+        [data-theme="dark"] .close:hover { color: #e2e8f0; }
+        [data-theme="dark"] #canvasWrapper {
+            background-image: linear-gradient(45deg, #334155 25%, transparent 25%), linear-gradient(-45deg, #334155 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #334155 75%), linear-gradient(-45deg, transparent 75%, #334155 75%);
+            border-color: #334155;
+        }
+        [data-theme="dark"] .margin-btn { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+        [data-theme="dark"] .margin-btn:hover { background: #475569; color: white; border-color: #475569; }
+        [data-theme="dark"] .margin-label { color: #64748b; }
+        [data-theme="dark"] #canvasWrapper:hover .resize-handle { background: rgba(226, 232, 240, 0.08); }
+        [data-theme="dark"] .resize-handle:hover { background: rgba(226, 232, 240, 0.22) !important; }
+        [data-theme="dark"] .resize-handle.active { background: rgba(226, 232, 240, 0.32) !important; }
+        [data-theme="dark"] .edit-btn { background: #475569; }
+        /* 用 !important 蓋過內聯 style 的固定淺色字 */
+        [data-theme="dark"] #sizeInfo { color: #94a3b8 !important; }
+        [data-theme="dark"] #folderStatus { color: #94a3b8 !important; }
+        [data-theme="dark"] #currentTemplate { color: #e2e8f0 !important; }
+        [data-theme="dark"] .info-box span { color: #e2e8f0 !important; }
     </style>
+    <script>
+        // 早期主題偵測：在 body 渲染前套用，避免亮 → 暗閃爍 (FOUC)
+        (function () {
+            try {
+                if (localStorage.getItem('pngTheme') === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) { /* localStorage 不可用就忽略 */ }
+        })();
+    </script>
 </head>
 <body>
     <div id="loadingOverlay">
@@ -237,7 +328,14 @@
     </div>
 
     <div class="container">
-        <div class="header"><h1>極山專用刻字轉換器</h1><p>自訂模板 · 透明背景 · 中英分離字體</p></div>
+        <div class="header">
+            <h1>極山專用刻字轉換器</h1>
+            <p>自訂模板 · 透明背景 · 中英分離字體</p>
+            <button id="themeToggle" class="theme-toggle" type="button" onclick="toggleTheme()" title="切換明暗主題" aria-label="切換明暗主題">
+                <span class="theme-icon-moon">☾</span>
+                <span class="theme-icon-sun">☀</span>
+            </button>
+        </div>
         <div class="content">
             <div class="section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -373,6 +471,18 @@
         let savedEnglishY = 0;
         let yOffsetsDisabled = false;
         
+        // --- 主題切換 ---
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                try { localStorage.setItem('pngTheme', 'light'); } catch (e) {}
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                try { localStorage.setItem('pngTheme', 'dark'); } catch (e) {}
+            }
+        }
+
         // --- 初始化 ---
         window.onload = async function() {
             const fontsLoaded = await loadFontsWithProgress();
