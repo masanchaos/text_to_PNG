@@ -29,31 +29,31 @@
 
         /* 通用樣式 — 專業配色 (slate/navy) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans CJK TC', '微軟正黑體', -apple-system, BlinkMacSystemFont, sans-serif; background: #f1f5f9; color: #0f172a; min-height: 100vh; padding: 24px; -webkit-font-smoothing: antialiased; }
-        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 4px 24px rgba(15,23,42,0.06); overflow: hidden; border: 1px solid #e2e8f0; }
+        body { font-family: 'Noto Sans CJK TC', '微軟正黑體', -apple-system, BlinkMacSystemFont, sans-serif; background: #e8ecf1; color: #0f172a; min-height: 100vh; padding: 24px; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 1100px; margin: 0 auto; background: #f7f8fa; border-radius: 8px; box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 4px 24px rgba(15,23,42,0.06); overflow: hidden; border: 1px solid #e2e8f0; }
         .header { background: #0f172a; color: white; padding: 28px 32px; text-align: left; border-bottom: 3px solid #1e293b; }
         .header h1 { font-size: 1.6em; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
         .header p { color: #94a3b8; font-size: 0.875em; font-weight: 400; }
         .content { padding: 28px 32px; }
-        .section { margin-bottom: 20px; padding: 20px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .section { margin-bottom: 20px; padding: 20px; background: #eff2f6; border-radius: 6px; border: 1px solid #e2e8f0; }
         .section-title { font-size: 0.95em; font-weight: 600; margin-bottom: 14px; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em; }
         label { font-size: 13px; color: #475569; font-weight: 500; }
-        input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; margin-top: 6px; background: white; color: #0f172a; font-family: inherit; }
+        input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 14px; margin-top: 6px; background: #f7f8fa; color: #0f172a; font-family: inherit; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #1e293b; box-shadow: 0 0 0 3px rgba(30,41,59,0.08); }
-        input:disabled { background-color: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+        input:disabled { background-color: #e8ecf1; color: #94a3b8; cursor: not-allowed; }
 
         .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
         .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; }
         .btn { padding: 8px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: 500; transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; font-size: 13px; font-family: inherit; }
         .btn-primary { background: #1e293b; color: white; }
         .btn-primary:hover { background: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .btn-secondary { background: white; color: #1e293b; border: 1px solid #cbd5e1; }
-        .btn-secondary:hover { background: #f8fafc; border-color: #1e293b; }
+        .btn-secondary { background: #f7f8fa; color: #1e293b; border: 1px solid #cbd5e1; }
+        .btn-secondary:hover { background: #eff2f6; border-color: #1e293b; }
         .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .info-box { padding: 10px 12px; background: #f1f5f9; border-left: 3px solid #64748b; border-radius: 3px; font-size: 12.5px; color: #475569; margin-top: 14px; line-height: 1.5; }
+        .info-box { padding: 10px 12px; background: #e8ecf1; border-left: 3px solid #64748b; border-radius: 3px; font-size: 12.5px; color: #475569; margin-top: 14px; line-height: 1.5; }
         .char-counter { text-align: right; font-size: 12px; margin-top: 6px; color: #64748b; font-variant-numeric: tabular-nums; }
         .char-counter.error { color: #dc2626; font-weight: 600; }
-        .checkbox-group { display: flex; align-items: center; padding: 10px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 5px; margin-top: 10px; }
+        .checkbox-group { display: flex; align-items: center; padding: 10px 12px; background: #f7f8fa; border: 1px solid #e2e8f0; border-radius: 5px; margin-top: 10px; }
         .checkbox-group label { color: #334155; font-size: 13px; }
         input[type="checkbox"] { width: auto; margin-right: 8px; accent-color: #1e293b; }
         
@@ -87,7 +87,7 @@
             height: 28px;
             border-radius: 50%;
             border: 1px solid #ccc;
-            background: white;
+            background: #f7f8fa;
             color: #666;
             font-weight: bold;
             cursor: pointer;
@@ -145,7 +145,7 @@
 
 
         .font-mode-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
-        .font-mode-btn { flex: 1; padding: 9px; border: 1px solid #cbd5e1; background: white; border-radius: 5px; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; font-size: 13px; font-weight: 500; color: #475569; font-family: inherit; }
+        .font-mode-btn { flex: 1; padding: 9px; border: 1px solid #cbd5e1; background: #f7f8fa; border-radius: 5px; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; font-size: 13px; font-weight: 500; color: #475569; font-family: inherit; }
         .font-mode-btn:hover { border-color: #1e293b; color: #1e293b; }
         .font-mode-btn.active { background: #1e293b; color: white; border-color: #1e293b; }
         .font-settings { display: none; }
@@ -160,7 +160,7 @@
 
         .template-card {
             padding: 14px;
-            background: white;
+            background: #f7f8fa;
             border-radius: 5px;
             border: 1px solid #e2e8f0;
             cursor: pointer;
@@ -174,12 +174,12 @@
             align-items: center;
         }
         .template-card:hover { border-color: #1e293b; box-shadow: 0 2px 8px rgba(15,23,42,0.08); }
-        .template-card.active { border-color: #1e293b; background: #f1f5f9; box-shadow: inset 0 0 0 1px #1e293b; }
+        .template-card.active { border-color: #1e293b; background: #e8ecf1; box-shadow: inset 0 0 0 1px #1e293b; }
         .template-card.dragging { opacity: 0.4; border: 1px dashed #1e293b; }
 
         .add-template-card {
             padding: 14px;
-            background: #fff;
+            background: #f7f8fa;
             border: 1.5px dashed #cbd5e1;
             border-radius: 5px;
             cursor: pointer;
@@ -192,14 +192,14 @@
             min-height: 130px;
             color: #64748b;
         }
-        .add-template-card:hover { background: #f8fafc; border-color: #1e293b; color: #1e293b; }
+        .add-template-card:hover { background: #eff2f6; border-color: #1e293b; color: #1e293b; }
 
         .delete-btn, .edit-btn { position: absolute; top: 6px; width: 22px; height: 22px; border-radius: 3px; border: none; cursor: pointer; display: none; color: white; font-size: 11px; font-weight: bold; }
         .delete-btn { right: 6px; background: #dc2626; }
         .edit-btn { right: 32px; background: #1e293b; }
         .template-card:hover .delete-btn, .template-card:hover .edit-btn { display: block; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(15,23,42,0.55); }
-        .modal-content { background-color: white; margin: 3% auto; padding: 28px 32px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .modal-content { background-color: #f7f8fa; margin: 3% auto; padding: 28px 32px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
         .close { color: #94a3b8; float: right; font-size: 26px; font-weight: 400; cursor: pointer; line-height: 1; }
         .close:hover { color: #0f172a; }
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.92); z-index: 2000; display: flex; align-items: center; justify-content: center; color: white; transition: opacity 0.3s; }
@@ -209,12 +209,12 @@
         #progressBar { width: 0%; height: 6px; background: #e2e8f0; transition: width 0.2s ease-out; }
         #fontStatus { font-size: 0.85em; height: 20px; color: #94a3b8; font-variant-numeric: tabular-nums; }
 
-        .stepper { display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 6px; background: white; }
+        .stepper { display: flex; align-items: center; border: 1px solid #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 6px; background: #f7f8fa; }
         .stepper:focus-within { border-color: #1e293b; box-shadow: 0 0 0 3px rgba(30,41,59,0.08); }
         .stepper input { width: 100%; border: none; text-align: center; margin: 0; padding: 8px 0; -moz-appearance: textfield; background: transparent; box-shadow: none; }
         .stepper input:focus { box-shadow: none; }
         .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .stepper-btn { background: #f8fafc; border: none; cursor: pointer; font-size: 16px; color: #475569; font-weight: 600; transition: background 0.15s, color 0.15s; width: 32px; height: 36px; flex-shrink: 0; user-select: none; }
+        .stepper-btn { background: #eff2f6; border: none; cursor: pointer; font-size: 16px; color: #475569; font-weight: 600; transition: background 0.15s, color 0.15s; width: 32px; height: 36px; flex-shrink: 0; user-select: none; }
         .stepper-btn:hover { background: #e2e8f0; color: #0f172a; }
 
         /* 下載成功 / 失敗通知 (自動消失) */
@@ -359,7 +359,8 @@
                     <input type="text" id="shippingNumberInput" placeholder="選填，將作為下載檔名的開頭">
                 </div>
                 <div class="section-title">輸入文字</div>
-                <textarea id="textInput" placeholder="請輸入要轉換的文字..." style="height: 100px;"></textarea>
+                <input type="text" id="textInput" placeholder="請輸入要轉換的文字...">
+
                 <div class="char-counter" id="charCounter">0 字元</div>
             </div>
 
@@ -378,10 +379,10 @@
                     <div><label>英文 Y 軸偏移 (px)</label><input type="number" id="englishYOffset" value="0" step="0.5" title="僅在文字同時包含中文與英文時生效"></div>
                 </div>
                 <div class="grid-4">
-                    <div><label id="labelPaddingTop">上邊距 (Top)</label><input type="number" id="paddingTop" value="0" min="0" max="200"></div>
-                    <div><label id="labelPaddingBottom">下邊距 (Bottom)</label><input type="number" id="paddingBottom" value="0" min="0" max="200"></div>
-                    <div><label id="labelPaddingLeft">左邊距 (Left)</label><input type="number" id="paddingLeft" value="0" min="0" max="200"></div>
-                    <div><label id="labelPaddingRight">右邊距 (Right)</label><input type="number" id="paddingRight" value="0" min="0" max="200"></div>
+                    <div><label id="labelPaddingTop">上邊距 (Top)</label><input type="number" id="paddingTop" value="0" min="-500" max="200"></div>
+                    <div><label id="labelPaddingBottom">下邊距 (Bottom)</label><input type="number" id="paddingBottom" value="0" min="-500" max="200"></div>
+                    <div><label id="labelPaddingLeft">左邊距 (Left)</label><input type="number" id="paddingLeft" value="0" min="-500" max="200"></div>
+                    <div><label id="labelPaddingRight">右邊距 (Right)</label><input type="number" id="paddingRight" value="0" min="-500" max="200"></div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="rotate180"><label for="rotate180">旋轉180度</label>
