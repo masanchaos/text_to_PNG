@@ -548,7 +548,6 @@
                     const logicalSide = visualToLogicalSide(visualSide);
                     const input = document.getElementById('padding' + logicalSide);
                     const maxVal = parseInt(input.getAttribute('max'), 10);
-                    const minVal = parseInt(input.getAttribute('min'), 10);
                     dragging = {
                         handle,
                         visualSide,
@@ -557,7 +556,8 @@
                         startY: e.clientY,
                         startValue: parseInt(input.value, 10) || 0,
                         maxVal: Number.isFinite(maxVal) ? maxVal : 200,
-                        minVal: Number.isFinite(minVal) ? minVal : 0
+                        // 拖曳鎖在 0，不允許切到字；要切字請用 +/- 按鈕或手動輸入
+                        minVal: 0
                     };
                 });
 
