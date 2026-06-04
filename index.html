@@ -440,12 +440,12 @@
             <div class="section">
                 <div class="section-title">貼紙列印（固定尺寸 · 直接送印）</div>
                 <div class="grid-4">
-                    <div><label>貼紙寬 (mm)</label><input type="number" id="stickerWidthMM" value="30" min="5" max="300" step="0.5"></div>
-                    <div><label>貼紙高 (mm)</label><input type="number" id="stickerHeightMM" value="15" min="5" max="300" step="0.5"></div>
+                    <div><label>貼紙寬 (mm)</label><input type="number" id="stickerWidthMM" value="40" min="5" max="300" step="0.5"></div>
+                    <div><label>貼紙高 (mm)</label><input type="number" id="stickerHeightMM" value="30" min="5" max="300" step="0.5"></div>
                     <div><label>安全邊距 (mm)</label><input type="number" id="stickerMarginMM" value="1" min="0" max="20" step="0.5"></div>
                     <div><label>列印份數</label><input type="number" id="stickerCopies" value="1" min="1" max="200" step="1"></div>
                 </div>
-                <div class="info-box">文字會自動縮放、置中並填滿貼紙（保留安全邊距），沿用上方字體 / 顏色 / 旋轉等設定。預設依 300 DPI 標籤機輸出（30×15mm = 354×177px）。</div>
+                <div class="info-box">文字會自動縮放、置中並填滿貼紙（保留安全邊距），沿用上方字體 / 顏色 / 旋轉等設定。預設依 300 DPI 標籤機輸出（40×30mm = 472×354px）。</div>
                 <div style="text-align: center; margin-top: 16px;">
                     <div id="stickerPreviewOuter" style="display: inline-block; background: #ffffff; border: 1px solid #94a3b8; border-radius: 2px; line-height: 0; box-shadow: 0 1px 4px rgba(15,23,42,0.12);">
                         <canvas id="stickerCanvas"></canvas>
@@ -456,7 +456,7 @@
                     <button class="btn btn-secondary" onclick="downloadStickerPNG()" style="margin-right: 8px;">下載貼紙 PNG</button>
                     <button class="btn btn-primary" onclick="printSticker()">🖨 列印貼紙</button>
                 </div>
-                <div class="info-box" style="margin-top: 14px;">列印對話框請設定「邊界：無」、「縮放：100% / 實際大小」，並選擇 30×15mm（或對應）標籤紙，印出的尺寸才會精準。</div>
+                <div class="info-box" style="margin-top: 14px;">列印對話框請設定「邊界：無」、「縮放：100% / 實際大小」，並選擇 40×30mm（或對應）標籤紙，印出的尺寸才會精準。</div>
             </div>
         </div>
     </div>
@@ -1428,7 +1428,7 @@
         // 貼紙列印（固定尺寸 · 瀏覽器直接送印）
         // 文字自動縮放置中、填滿安全區；沿用目前字體 / 顏色 / 旋轉 / Y 軸偏移設定
         // ===================================================================
-        const STICKER_DPI = 300; // 標籤機解析度；30×15mm @300DPI = 354×177px
+        const STICKER_DPI = 300; // 標籤機解析度；40×30mm @300DPI = 472×354px
 
         function clampNum(v, min, max) {
             if (!isFinite(v)) return min;
@@ -1456,8 +1456,8 @@
             const wRaw = parseFloat(document.getElementById('stickerWidthMM').value);
             const hRaw = parseFloat(document.getElementById('stickerHeightMM').value);
             const mRaw = parseFloat(document.getElementById('stickerMarginMM').value);
-            const wMM = isFinite(wRaw) ? clampNum(wRaw, 5, 300) : 30;
-            const hMM = isFinite(hRaw) ? clampNum(hRaw, 5, 300) : 15;
+            const wMM = isFinite(wRaw) ? clampNum(wRaw, 5, 300) : 40;
+            const hMM = isFinite(hRaw) ? clampNum(hRaw, 5, 300) : 30;
             const marginMM = isFinite(mRaw) ? clampNum(mRaw, 0, 20) : 1;
             return {
                 wMM, hMM, marginMM, pxPerMm,
