@@ -1077,39 +1077,111 @@
             const coreHeight = maxRawAscent + maxRawDescent;
             const canvasWidth = coreWidth + paddingLeft + paddingRight;
             const canvasHeight = coreHeight + paddingTop + paddingBottom;
+            const stable_alphabetic_baseline = paddingTop + maxRawAscent;
+
+            // 在指定 ctx 上、以 (offX, offY) 為基準繪製文字（含 180° 旋轉），與原本邏輯完全一致
+            function drawContent(c, offX, offY) {
+                c.save();
+                c.translate(offX, offY);
+                c.textBaseline = 'alphabetic';
+                if (rotate) {
+                    c.translate(canvasWidth / 2, canvasHeight / 2);
+                    c.rotate(Math.PI);
+                    c.translate(-canvasWidth / 2, -canvasHeight / 2);
+                }
+                c.fillStyle = textColor;
+                let x = paddingLeft;
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    const isCharChinese = isChinese(char);
+                    const yOffset = isCharChinese ? effectiveChineseYOffset : effectiveEnglishYOffset;
+                    const font = fontMode === 'dual' ? (isCharChinese ? chineseFont : englishFont) : singleFont;
+                    c.font = `${fontSize}px ${font}`;
+                    c.fillText(char, x, stable_alphabetic_baseline + yOffset);
+                    x += c.measureText(char).width + letterSpacing;
+                }
+                c.restore();
+            }
 
             const canvas = opts.canvas || document.createElement('canvas');
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
+
+            if (!opts.fitInk) {
+                // 原始行為：直接畫在 canvasWidth × canvasHeight（手動即時預覽用，行為不變）
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                drawContent(ctx, 0, 0);
+                return {
+                    canvas, canvasWidth, canvasHeight,
+                    coreWidth, maxRawAscent, maxRawDescent,
+                    isMixed, effectiveChineseYOffset, effectiveEnglishYOffset,
+                    stable_alphabetic_baseline, growLeft: 0, growTop: 0
+                };
+            }
+
+            // fitInk：防裁切。先畫在四周留白(slack)的暫存畫布上、量測實際墨水範圍，
+            // 只有當墨水「超出原本畫布」(草寫/斜體外凸) 時才往該側擴張並補回乾淨邊距；
+            // 墨水未超出時（正體）grow 全為 0 → 輸出與原本逐像素相同。
+            const safeMargin = Math.max(3, Math.round(fontSize * 0.08));
+            const S = Math.ceil(fontSize) + safeMargin + 16;
+            const temp = document.createElement('canvas');
+            temp.width = canvasWidth + 2 * S;
+            temp.height = canvasHeight + 2 * S;
+            const tctx = temp.getContext('2d', { willReadFrequently: true });
+            drawContent(tctx, S, S);
+
+            const td = tctx.getImageData(0, 0, temp.width, temp.height).data;
+            let minX = temp.width, minY = temp.height, maxX = -1, maxY = -1;
+            for (let y = 0; y < temp.height; y++) {
+                const row = y * temp.width;
+                for (let x = 0; x < temp.width; x++) {
+                    if (td[(row + x) * 4 + 3] !== 0) {
+                        if (x < minX) minX = x; if (x > maxX) maxX = x;
+                        if (y < minY) minY = y; if (y > maxY) maxY = y;
+                    }
+                }
+            }
+
+            let growLeft = 0, growRight = 0, growTop = 0, growBottom = 0;
+            if (maxX >= 0) {
+                // 墨水相對原本畫布框 [S, S, S+W-1, S+H-1] 的各側邊距（負值 = 外凸/被裁切）
+                const mL = minX - S, mT = minY - S;
+                const mR = (S + canvasWidth - 1) - maxX, mB = (S + canvasHeight - 1) - maxY;
+                if (mL < 0) growLeft = Math.ceil(-mL + safeMargin);
+                if (mT < 0) growTop = Math.ceil(-mT + safeMargin);
+                if (mR < 0) growRight = Math.ceil(-mR + safeMargin);
+                if (mB < 0) growBottom = Math.ceil(-mB + safeMargin);
+            }
+
+            if (growLeft === 0 && growRight === 0 && growTop === 0 && growBottom === 0) {
+                // 墨水沒有外凸 → 直接畫（不經 drawImage 複製），與非 fitInk/手動逐像素相同
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                drawContent(ctx, 0, 0);
+                return {
+                    canvas, canvasWidth, canvasHeight,
+                    coreWidth, maxRawAscent, maxRawDescent,
+                    isMixed, effectiveChineseYOffset, effectiveEnglishYOffset,
+                    stable_alphabetic_baseline, growLeft: 0, growTop: 0
+                };
+            }
+
+            const finalWidth = canvasWidth + growLeft + growRight;
+            const finalHeight = canvasHeight + growTop + growBottom;
+            canvas.width = finalWidth;
+            canvas.height = finalHeight;
             const ctx = canvas.getContext('2d');
-            ctx.textBaseline = 'alphabetic';
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            if (rotate) {
-                ctx.save();
-                ctx.translate(canvasWidth / 2, canvasHeight / 2);
-                ctx.rotate(Math.PI);
-                ctx.translate(-canvasWidth / 2, -canvasHeight / 2);
-            }
-            ctx.fillStyle = textColor;
-            let x = paddingLeft;
-            const stable_alphabetic_baseline = paddingTop + maxRawAscent;
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const isCharChinese = isChinese(char);
-                const yOffset = isCharChinese ? effectiveChineseYOffset : effectiveEnglishYOffset;
-                const font = fontMode === 'dual' ? (isCharChinese ? chineseFont : englishFont) : singleFont;
-                ctx.font = `${fontSize}px ${font}`;
-                ctx.fillText(char, x, stable_alphabetic_baseline + yOffset);
-                x += ctx.measureText(char).width + letterSpacing;
-            }
-            if (rotate) ctx.restore();
+            ctx.clearRect(0, 0, finalWidth, finalHeight);
+            ctx.drawImage(temp, S - growLeft, S - growTop, finalWidth, finalHeight, 0, 0, finalWidth, finalHeight);
 
             return {
-                canvas,
-                canvasWidth, canvasHeight,
+                canvas, canvasWidth: finalWidth, canvasHeight: finalHeight,
                 coreWidth, maxRawAscent, maxRawDescent,
                 isMixed, effectiveChineseYOffset, effectiveEnglishYOffset,
-                stable_alphabetic_baseline
+                stable_alphabetic_baseline, growLeft, growTop
             };
         }
 
@@ -1310,7 +1382,7 @@
             if (!m.templateName) return warn('⚠ 未選模板');
             const t = templates.find(x => x.name === m.templateName);
             if (!t) return warn('⚠ 模板不存在');
-            const { canvas } = renderTextToCanvas(templateToRenderParams(t, m.text, picker));
+            const { canvas } = renderTextToCanvas({ ...templateToRenderParams(t, m.text, picker), fitInk: true });
             const MAXW = 220, MAXH = 64;
             const scale = Math.min(1, MAXW / canvas.width, MAXH / canvas.height);
             canvas.style.width = `${Math.round(canvas.width * scale)}px`;
@@ -1385,7 +1457,7 @@
                     const m = targets[i];
                     prog.textContent = `繪製中 ${i + 1}/${targets.length}…`;
                     const t = templates.find(x => x.name === m.templateName);
-                    const { canvas } = renderTextToCanvas(templateToRenderParams(t, m.text, picker));
+                    const { canvas } = renderTextToCanvas({ ...templateToRenderParams(t, m.text, picker), fitInk: true });
                     const blob = await canvasToBlobSafe(canvas);
                     items.push({ filename: buildFilenameFor(m.shipping, m.text), blob });
                 }
