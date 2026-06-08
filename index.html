@@ -438,6 +438,32 @@
             </div>
 
             <div class="section">
+                <div class="section-title">📋 批次模式（上傳刻字表 xlsx → 一鍵全部生成）</div>
+                <div class="info-box">上傳當天的「刻字 MMDD.xlsx」，自動讀「刻字表」分頁、每列自動選模板並預覽（縮圖＝實際輸出）。可逐列改文字 / 換模板 / 取消勾選，再「全部生成」存到上方選的下載資料夾（未選資料夾則打包成 ZIP）。</div>
+                <div style="text-align:center; margin:12px 0;">
+                    <input type="file" id="batchFile" accept=".xlsx" style="display:none;" onchange="onBatchFileChosen(event)">
+                    <button class="btn btn-secondary" onclick="document.getElementById('batchFile').click()">選擇 xlsx</button>
+                    <span id="batchFileStatus" style="margin-left:10px; font-size:12px; color:#666;">尚未選擇檔案</span>
+                </div>
+                <div id="batchPreviewWrap" style="display:none;">
+                    <div style="overflow-x:auto;">
+                        <table id="batchTable" style="width:100%; border-collapse:collapse; font-size:13px;">
+                            <thead><tr style="text-align:left; border-bottom:1px solid #cbd5e1;">
+                                <th style="padding:6px;">✔</th><th style="padding:6px;">預覽（實際輸出縮圖）</th>
+                                <th style="padding:6px;">出貨編號</th><th style="padding:6px;">刻字內容</th>
+                                <th style="padding:6px;">模板</th><th style="padding:6px;">備註</th>
+                            </tr></thead>
+                            <tbody id="batchTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="text-align:center; margin-top:14px;">
+                        <button class="btn btn-primary" id="batchGenerateBtn" onclick="generateAllBatch()">全部生成</button>
+                        <span id="batchProgress" style="margin-left:10px; font-size:12px; color:#666;"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
                 <div class="section-title">貼紙列印（固定尺寸 · 直接送印）</div>
                 <div class="grid-4">
                     <div><label>貼紙寬 (mm)</label><input type="number" id="stickerWidthMM" value="40" min="5" max="300" step="0.5"></div>
@@ -482,6 +508,8 @@
             </div>
             <div style="margin-bottom: 15px;"><input type="checkbox" id="templateRotate"><label for="templateRotate">旋轉180度</label></div><div style="margin-bottom: 15px;"><label>描述（選填）</label><input type="text" id="templateDesc" placeholder="例如：適用於主標題"></div><div style="margin-top: 20px;"><button class="btn btn-primary" onclick="saveTemplate()">儲存模板</button><button class="btn btn-secondary" onclick="closeModal()" style="margin-left: 10px;">取消</button></div></div></div>
 
+    <!-- 批次模式：本地 xlsx 解析器（離線可用，不依賴網路） -->
+    <script src="vendor/xlsx.full.min.js"></script>
     <script>
         // --- 全域變數 ---
         let templates = [];
@@ -1011,41 +1039,30 @@
         }
 
         // --- Canvas 核心繪圖函數 ---
-        async function updateCanvas() {
-            await document.fonts.ready;
+        // 唯一繪圖來源：手動即時預覽與批次都呼叫此函式，確保輸出逐像素相同。
+        // opts 數值型別與單位需與 updateCanvas 從 DOM 讀到的一致（同樣 parseInt/parseFloat）。
+        // yOffset 的「單一語系歸零」規則內建於此（與 handleYOffsetLogic 對齊），批次無需 DOM 也一致。
+        function renderTextToCanvas(opts) {
+            const text = opts.text;
+            const fontMode = opts.fontMode;
+            const singleFont = opts.singleFont;
+            const englishFont = opts.englishFont;
+            const chineseFont = opts.chineseFont;
+            const fontSize = parseFloat(opts.fontSize);
+            const letterSpacing = parseInt(opts.letterSpacing);
+            const textColor = opts.textColor;
+            const paddingTop = parseInt(opts.paddingTop) || 0;
+            const paddingBottom = parseInt(opts.paddingBottom) || 0;
+            const paddingLeft = parseInt(opts.paddingLeft) || 0;
+            const paddingRight = parseInt(opts.paddingRight) || 0;
+            const rotate = !!opts.rotate;
 
-            const textCanvas = document.getElementById('textCanvas');
-            const guideCanvas = document.getElementById('guideCanvas');
-            const wrapper = document.getElementById('canvasWrapper');
-            const ctx = textCanvas.getContext('2d');
-            const guideCtx = guideCanvas.getContext('2d');
-
-            const text = document.getElementById('textInput').value || 'Hello, World';
-            const fontSize = parseFloat(document.getElementById('fontSize').value);
-            const letterSpacing = parseInt(document.getElementById('letterSpacing').value);
-            const textColor = document.getElementById('textColor').value;
-            const paddingTop = parseInt(document.getElementById('paddingTop').value) || 0;
-            const paddingBottom = parseInt(document.getElementById('paddingBottom').value) || 0;
-            const paddingLeft = parseInt(document.getElementById('paddingLeft').value) || 0;
-            const paddingRight = parseInt(document.getElementById('paddingRight').value) || 0;
-            const rotate = document.getElementById('rotate180').checked;
-            const singleFont = document.getElementById('fontFamily').value;
-            const englishFont = document.getElementById('englishFont').value;
-            const chineseFont = document.getElementById('chineseFont').value;
-            const showGuides = document.getElementById('showAlignmentGuides').checked;
-
-            // [修改] 混排偵測邏輯：數字不算英文
             const isMixed = hasChinese(text) && hasEnglish(text);
-            handleYOffsetLogic(isMixed);
-            
-            const effectiveChineseYOffset = parseFloat(document.getElementById('chineseYOffset').value) || 0;
-            const effectiveEnglishYOffset = parseFloat(document.getElementById('englishYOffset').value) || 0;
+            const effectiveChineseYOffset = isMixed ? (parseFloat(opts.chineseYOffset) || 0) : 0;
+            const effectiveEnglishYOffset = isMixed ? (parseFloat(opts.englishYOffset) || 0) : 0;
 
             const tempCtx = document.createElement('canvas').getContext('2d');
-            let coreWidth = 0;
-            let maxRawAscent = 0;
-            let maxRawDescent = 0;
-
+            let coreWidth = 0, maxRawAscent = 0, maxRawDescent = 0;
             for (let i = 0; i < text.length; i++) {
                 const char = text[i];
                 const isCharChinese = isChinese(char);
@@ -1056,21 +1073,404 @@
                 maxRawAscent = Math.max(maxRawAscent, metrics.actualBoundingBoxAscent || fontSize * 0.8);
                 maxRawDescent = Math.max(maxRawDescent, metrics.actualBoundingBoxDescent || fontSize * 0.2);
             }
-            if (text.length > 1) {
-                coreWidth += letterSpacing * (text.length - 1);
-            }
+            if (text.length > 1) coreWidth += letterSpacing * (text.length - 1);
             const coreHeight = maxRawAscent + maxRawDescent;
-
             const canvasWidth = coreWidth + paddingLeft + paddingRight;
             const canvasHeight = coreHeight + paddingTop + paddingBottom;
-            
-            [textCanvas, guideCanvas].forEach(c => {
-                c.width = canvasWidth;
-                c.height = canvasHeight;
+
+            const canvas = opts.canvas || document.createElement('canvas');
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.textBaseline = 'alphabetic';
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            if (rotate) {
+                ctx.save();
+                ctx.translate(canvasWidth / 2, canvasHeight / 2);
+                ctx.rotate(Math.PI);
+                ctx.translate(-canvasWidth / 2, -canvasHeight / 2);
+            }
+            ctx.fillStyle = textColor;
+            let x = paddingLeft;
+            const stable_alphabetic_baseline = paddingTop + maxRawAscent;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const isCharChinese = isChinese(char);
+                const yOffset = isCharChinese ? effectiveChineseYOffset : effectiveEnglishYOffset;
+                const font = fontMode === 'dual' ? (isCharChinese ? chineseFont : englishFont) : singleFont;
+                ctx.font = `${fontSize}px ${font}`;
+                ctx.fillText(char, x, stable_alphabetic_baseline + yOffset);
+                x += ctx.measureText(char).width + letterSpacing;
+            }
+            if (rotate) ctx.restore();
+
+            return {
+                canvas,
+                canvasWidth, canvasHeight,
+                coreWidth, maxRawAscent, maxRawDescent,
+                isMixed, effectiveChineseYOffset, effectiveEnglishYOffset,
+                stable_alphabetic_baseline
+            };
+        }
+
+        // 將已存模板 + 該列文字 對應成 renderTextToCanvas 的 opts。
+        // 預設值需與 applyTemplate 完全一致；textColor 取現場色票（applyTemplate 不套用 template.textColor），確保批次==手動。
+        function templateToRenderParams(t, text, textColor) {
+            const fontMode = t.fontMode || 'single';
+            return {
+                text,
+                fontMode,
+                singleFont: t.singleFont || "'Noto Sans CJK TC', sans-serif",
+                englishFont: t.englishFont || "'Avenir Next Condensed', sans-serif",
+                chineseFont: t.chineseFont || "'Noto Sans CJK TC', sans-serif",
+                fontSize: t.fontSize,
+                letterSpacing: t.letterSpacing,
+                textColor: textColor,
+                paddingTop: t.paddingTop || t.paddingY || 10,
+                paddingBottom: t.paddingBottom || t.paddingY || 10,
+                paddingLeft: t.paddingLeft || t.paddingX || 20,
+                paddingRight: t.paddingRight || t.paddingX || 20,
+                rotate: t.rotate || false,
+                chineseYOffset: t.chineseYOffset || 0,
+                englishYOffset: t.englishYOffset || 0
+            };
+        }
+
+        // --- 批次：依資料自動選模板 (款式 × 字體 × 下緣字母) ---
+        // 款式 → 代數
+        function genFromStyle(style) {
+            const s = String(style || '');
+            if (s.includes('三代')) return 3;
+            if (s.includes('二代')) return 2;
+            if (s.includes('一代')) return 1;
+            return null;
+        }
+        // 備註含「草寫」→ 草寫字體
+        function isCursiveNote(note) { return /草寫/.test(String(note || '')); }
+        // 是否含「下緣字母」(僅小寫)。正體: gjpqy；草寫一/二代: fgjpqyz；草寫三代: fgjpqy(無 z)
+        function textHasDescender(text, cursive, gen) {
+            const set = cursive ? (gen === 3 ? 'fgjpqy' : 'fgjpqyz') : 'gjpqy';
+            return new RegExp('[' + set + ']').test(String(text || ''));
+        }
+        // 依 (代數, 字體, 有無下緣) 在目前 templates[] 比對唯一一個預設模板；找不到回 null
+        function pickTemplateFor(gen, cursive, hasDesc) {
+            if (!gen) return null;
+            const genStr = gen === 1 ? '一代' : gen === 2 ? '二代' : '三代';
+            const fontKey = cursive ? '草寫' : '中英';
+            const descKey = hasDesc ? '有' : '沒';
+            const hits = templates.filter(t =>
+                t.name.includes(genStr) && t.name.includes(fontKey) && t.name.includes(descKey));
+            return hits.length === 1 ? hits[0] : null;
+        }
+        // 整合：由一列資料算出模板（template 為 null = 規則未命中，需手動）
+        function autoTemplateForRow(style, note, text) {
+            const gen = genFromStyle(style);
+            const cursive = isCursiveNote(note);
+            const hasDesc = textHasDescender(text, cursive, gen);
+            return { gen, cursive, hasDesc, template: pickTemplateFor(gen, cursive, hasDesc) };
+        }
+
+        // 解析上傳的 xlsx，回傳刻字表的資料列。以表頭文字定位欄位，容忍版面微調。
+        function parseEngravingSheet(arrayBuffer) {
+            const NEEDED = ['真站-出貨編號', '款式', '刻字內容', '備註'];
+            let wb;
+            try { wb = XLSX.read(arrayBuffer, { type: 'array' }); }
+            catch (e) { return { error: '無法讀取檔案（不是有效的 xlsx）', rows: [] }; }
+            const ws = wb.Sheets['刻字表'] || wb.Sheets[wb.SheetNames[0]];
+            if (!ws) return { error: '找不到工作表', rows: [] };
+            const grid = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: null });
+
+            let headerIdx = -1;
+            for (let i = 0; i < grid.length; i++) {
+                const cells = grid[i].map(c => String(c == null ? '' : c).trim());
+                if (NEEDED.every(h => cells.includes(h))) { headerIdx = i; break; }
+            }
+            if (headerIdx === -1) return { error: '找不到表頭（需含「真站-出貨編號 / 款式 / 刻字內容 / 備註」）', rows: [] };
+
+            const header = grid[headerIdx].map(c => String(c == null ? '' : c).trim());
+            const col = {
+                ship: header.indexOf('真站-出貨編號'),
+                style: header.indexOf('款式'),
+                text: header.indexOf('刻字內容'),
+                note: header.indexOf('備註')
+            };
+
+            const rows = [];
+            let blankStreak = 0;
+            for (let i = headerIdx + 1; i < grid.length; i++) {
+                const g = grid[i];
+                const text = String((g[col.text] == null ? '' : g[col.text])).trim();
+                if (!text) { blankStreak++; if (blankStreak >= 10) break; continue; }
+                blankStreak = 0;
+                rows.push({
+                    shipping: String((g[col.ship] == null ? '' : g[col.ship])).trim(),
+                    style:    String((g[col.style] == null ? '' : g[col.style])).trim(),
+                    text,
+                    note:     String((g[col.note] == null ? '' : g[col.note])).trim()
+                });
+            }
+            return { error: null, rows };
+        }
+
+        // --- 批次：狀態 + 預覽 ---
+        let batchModels = []; // [{shipping,text,note,style, gen,cursive,hasDesc, templateName|null, templateLocked, enabled}]
+
+        async function onBatchFileChosen(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('batchFileStatus').textContent = `讀取中：${file.name}`;
+            try {
+                const buf = await file.arrayBuffer();
+                const res = parseEngravingSheet(buf);
+                if (res.error) {
+                    document.getElementById('batchFileStatus').textContent = `❌ ${res.error}`;
+                    document.getElementById('batchPreviewWrap').style.display = 'none';
+                    return;
+                }
+                batchModels = res.rows.map(r => {
+                    const a = autoTemplateForRow(r.style, r.note, r.text);
+                    return { shipping: r.shipping, text: r.text, note: r.note, style: r.style,
+                             gen: a.gen, cursive: a.cursive, hasDesc: a.hasDesc,
+                             templateName: a.template ? a.template.name : null, templateLocked: false, enabled: true };
+                });
+                const unmatched = batchModels.filter(m => !m.templateName).length;
+                document.getElementById('batchFileStatus').textContent =
+                    `${file.name}（${batchModels.length} 列${unmatched ? `，${unmatched} 列需手動選模板` : ''}）`;
+                await buildBatchPreview();
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        async function buildBatchPreview() {
+            await document.fonts.ready;
+            const body = document.getElementById('batchTableBody');
+            body.innerHTML = '';
+            const picker = document.getElementById('textColor').value;
+            batchModels.forEach((m, idx) => {
+                const tr = document.createElement('tr');
+                tr.id = `batchRow_${idx}`;
+                tr.style.borderBottom = '1px solid #eef2f7';
+                if (!m.templateName) tr.style.background = 'rgba(220,38,38,0.08)';
+
+                const tdChk = document.createElement('td'); tdChk.style.padding = '6px';
+                const chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = m.enabled;
+                chk.onchange = () => { m.enabled = chk.checked; };
+                tdChk.appendChild(chk); tr.appendChild(tdChk);
+
+                const tdThumb = document.createElement('td'); tdThumb.style.padding = '6px';
+                tdThumb.appendChild(renderBatchRowThumb(m, picker)); tr.appendChild(tdThumb);
+
+                const tdShip = document.createElement('td'); tdShip.style.padding = '6px';
+                tdShip.textContent = m.shipping || '（無）'; tr.appendChild(tdShip);
+
+                const tdText = document.createElement('td'); tdText.style.padding = '6px';
+                const txt = document.createElement('input'); txt.type = 'text'; txt.value = m.text; txt.style.width = '180px';
+                txt.oninput = () => {
+                    m.text = txt.value;
+                    const a = autoTemplateForRow(m.style, m.note, m.text);
+                    m.hasDesc = a.hasDesc;
+                    if (!m.templateLocked) m.templateName = a.template ? a.template.name : null;
+                    refreshBatchRow(idx);
+                };
+                tdText.appendChild(txt); tr.appendChild(tdText);
+
+                const tdTpl = document.createElement('td'); tdTpl.style.padding = '6px';
+                const sel = document.createElement('select');
+                const none = document.createElement('option'); none.value = ''; none.textContent = '（未選）'; sel.appendChild(none);
+                templates.forEach(t => { const o = document.createElement('option'); o.value = t.name; o.textContent = t.name; sel.appendChild(o); });
+                sel.value = m.templateName || '';
+                sel.onchange = () => { m.templateName = sel.value || null; m.templateLocked = true; refreshBatchRow(idx); };
+                tdTpl.appendChild(sel); tr.appendChild(tdTpl);
+
+                const tdNote = document.createElement('td'); tdNote.style.padding = '6px';
+                tdNote.textContent = m.note || ''; tr.appendChild(tdNote);
+
+                body.appendChild(tr);
+            });
+            document.getElementById('batchPreviewWrap').style.display = 'block';
+        }
+
+        function refreshBatchRow(idx) {
+            const m = batchModels[idx];
+            const tr = document.getElementById(`batchRow_${idx}`);
+            if (!tr) return;
+            tr.style.background = m.templateName ? '' : 'rgba(220,38,38,0.08)';
+            const picker = document.getElementById('textColor').value;
+            const tdThumb = tr.children[1];
+            tdThumb.innerHTML = '';
+            tdThumb.appendChild(renderBatchRowThumb(m, picker));
+            const sel = tr.children[4].querySelector('select');
+            if (sel && sel.value !== (m.templateName || '')) sel.value = m.templateName || '';
+        }
+
+        // 縮圖 = 實際輸出 canvas（CSS 縮小顯示），所見即所得
+        function renderBatchRowThumb(m, picker) {
+            const warn = (msg) => { const s = document.createElement('span'); s.textContent = msg; s.style.color = '#dc2626'; return s; };
+            if (!m.templateName) return warn('⚠ 未選模板');
+            const t = templates.find(x => x.name === m.templateName);
+            if (!t) return warn('⚠ 模板不存在');
+            const { canvas } = renderTextToCanvas(templateToRenderParams(t, m.text, picker));
+            const MAXW = 220, MAXH = 64;
+            const scale = Math.min(1, MAXW / canvas.width, MAXH / canvas.height);
+            canvas.style.width = `${Math.round(canvas.width * scale)}px`;
+            canvas.style.height = `${Math.round(canvas.height * scale)}px`;
+            canvas.style.border = '1px solid #e2e8f0';
+            canvas.style.background = '#fff';
+            canvas.title = `${canvas.width} × ${canvas.height} px`;
+            return canvas;
+        }
+
+        // --- 批次：store-only ZIP（無壓縮；PNG 本身已壓縮，無需 deflate）---
+        function crc32(bytes) {
+            let crc = ~0;
+            for (let i = 0; i < bytes.length; i++) {
+                crc ^= bytes[i];
+                for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+            }
+            return (~crc) >>> 0;
+        }
+        function makeStoreZipBlob(files) { // files: [{name, bytes: Uint8Array}]
+            const enc = new TextEncoder();
+            const parts = [], central = [];
+            let offset = 0;
+            for (const f of files) {
+                const nameBytes = enc.encode(f.name);
+                const crc = crc32(f.bytes), size = f.bytes.length;
+                const local = new Uint8Array(30 + nameBytes.length);
+                const dv = new DataView(local.buffer);
+                dv.setUint32(0, 0x04034b50, true); dv.setUint16(4, 20, true); dv.setUint16(6, 0x0800, true);
+                dv.setUint16(8, 0, true); dv.setUint16(10, 0, true); dv.setUint16(12, 0, true);
+                dv.setUint32(14, crc, true); dv.setUint32(18, size, true); dv.setUint32(22, size, true);
+                dv.setUint16(26, nameBytes.length, true); dv.setUint16(28, 0, true);
+                local.set(nameBytes, 30);
+                parts.push(local, f.bytes);
+                const cen = new Uint8Array(46 + nameBytes.length);
+                const cv = new DataView(cen.buffer);
+                cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+                cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true); cv.setUint16(12, 0, true); cv.setUint16(14, 0, true);
+                cv.setUint32(16, crc, true); cv.setUint32(20, size, true); cv.setUint32(24, size, true);
+                cv.setUint16(28, nameBytes.length, true); cv.setUint32(42, offset, true);
+                cen.set(nameBytes, 46);
+                central.push(cen);
+                offset += local.length + f.bytes.length;
+            }
+            let centralSize = 0; central.forEach(c => centralSize += c.length);
+            const eocd = new Uint8Array(22);
+            const ev = new DataView(eocd.buffer);
+            ev.setUint32(0, 0x06054b50, true);
+            ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+            ev.setUint32(12, centralSize, true); ev.setUint32(16, offset, true);
+            return new Blob([...parts, ...central, eocd], { type: 'application/zip' });
+        }
+
+        // --- 批次：全部生成（優先寫指定資料夾；否則打包 ZIP）---
+        let isBatchRunning = false;
+        async function generateAllBatch() {
+            if (isBatchRunning) return;
+            const targets = batchModels.filter(m => m.enabled && m.templateName);
+            const skipped = batchModels.filter(m => m.enabled && !m.templateName).length;
+            if (!targets.length) { showToast('沒有可生成的列（請先選模板）', 3500, 'warning'); return; }
+
+            isBatchRunning = true;
+            const btn = document.getElementById('batchGenerateBtn');
+            const prog = document.getElementById('batchProgress');
+            btn.disabled = true;
+            const picker = document.getElementById('textColor').value;
+            await document.fonts.ready;
+
+            try {
+                const items = [];
+                for (let i = 0; i < targets.length; i++) {
+                    const m = targets[i];
+                    prog.textContent = `繪製中 ${i + 1}/${targets.length}…`;
+                    const t = templates.find(x => x.name === m.templateName);
+                    const { canvas } = renderTextToCanvas(templateToRenderParams(t, m.text, picker));
+                    const blob = await canvasToBlobSafe(canvas);
+                    items.push({ filename: buildFilenameFor(m.shipping, m.text), blob });
+                }
+
+                let folderHandle = null;
+                if (window.showDirectoryPicker) {
+                    try {
+                        const h = await loadFolderHandle();
+                        if (h && await verifyFolderPermission(h, true)) folderHandle = h;
+                    } catch (_) {}
+                }
+
+                let ok = 0, fail = 0;
+                if (folderHandle) {
+                    for (let i = 0; i < items.length; i++) {
+                        prog.textContent = `寫入資料夾 ${i + 1}/${items.length}…`;
+                        try { await writeBlobToHandle(folderHandle, items[i].filename, items[i].blob); ok++; }
+                        catch (e) { console.error(e); fail++; }
+                    }
+                    showToast(`完成：成功 ${ok}、失敗 ${fail}${skipped ? `、略過 ${skipped}` : ''} → ${folderHandle.name}`, 5000, fail ? 'warning' : 'success');
+                } else {
+                    prog.textContent = '打包 ZIP…';
+                    const files = [];
+                    for (const it of items) files.push({ name: it.filename, bytes: new Uint8Array(await it.blob.arrayBuffer()) });
+                    const zip = makeStoreZipBlob(files);
+                    const d = new Date();
+                    const pad = (n) => String(n).padStart(2, '0');
+                    fallbackBrowserDownload(zip, `刻字PNG_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.zip`);
+                    ok = files.length;
+                    showToast(`未設定下載資料夾 → 已打包 ${ok} 張為 ZIP${skipped ? `（略過 ${skipped}）` : ''}`, 5000, 'success');
+                }
+                prog.textContent = `完成：${ok} 張${fail ? `、失敗 ${fail}` : ''}${skipped ? `、略過 ${skipped}` : ''}`;
+            } finally {
+                btn.disabled = false;
+                isBatchRunning = false;
+            }
+        }
+
+        async function updateCanvas() {
+            await document.fonts.ready;
+
+            const textCanvas = document.getElementById('textCanvas');
+            const guideCanvas = document.getElementById('guideCanvas');
+            const wrapper = document.getElementById('canvasWrapper');
+            const guideCtx = guideCanvas.getContext('2d');
+
+            const text = document.getElementById('textInput').value || 'Hello, World';
+            const showGuides = document.getElementById('showAlignmentGuides').checked;
+
+            // 混排偵測 + UI 啟用/停用 Y 偏移輸入框（純 UI；實際繪圖偏移由 renderTextToCanvas 內部決定）
+            const isMixedForUI = hasChinese(text) && hasEnglish(text);
+            handleYOffsetLogic(isMixedForUI);
+
+            const r = renderTextToCanvas({
+                text,
+                fontMode,
+                singleFont: document.getElementById('fontFamily').value,
+                englishFont: document.getElementById('englishFont').value,
+                chineseFont: document.getElementById('chineseFont').value,
+                fontSize: document.getElementById('fontSize').value,
+                letterSpacing: document.getElementById('letterSpacing').value,
+                textColor: document.getElementById('textColor').value,
+                paddingTop: document.getElementById('paddingTop').value,
+                paddingBottom: document.getElementById('paddingBottom').value,
+                paddingLeft: document.getElementById('paddingLeft').value,
+                paddingRight: document.getElementById('paddingRight').value,
+                rotate: document.getElementById('rotate180').checked,
+                chineseYOffset: document.getElementById('chineseYOffset').value,
+                englishYOffset: document.getElementById('englishYOffset').value,
+                canvas: textCanvas
             });
 
-            // 動態縮放：短文字維持 1.3x 放大方便看，長文字自動縮小到容器可放下
-            // canvas 內部像素 (canvas.width) 不變、PNG 輸出尺寸不變，只動 CSS 顯示大小
+            const canvasWidth = r.canvasWidth;
+            const canvasHeight = r.canvasHeight;
+            const stable_alphabetic_baseline = r.stable_alphabetic_baseline;
+            const effectiveChineseYOffset = r.effectiveChineseYOffset;
+            const effectiveEnglishYOffset = r.effectiveEnglishYOffset;
+            const isMixed = r.isMixed;
+            const rotate = document.getElementById('rotate180').checked;
+            const fontSize = parseFloat(document.getElementById('fontSize').value);
+
+            guideCanvas.width = canvasWidth;
+            guideCanvas.height = canvasHeight;
+
+            // 動態縮放（顯示用）：短文字維持 1.3x，長文字縮小到容器可放下；canvas 內部像素不變
             const previewGrid = wrapper.parentElement;
             const availableWidth = previewGrid ? Math.max(100, previewGrid.clientWidth - 200) : 800;
             const MAX_SCALE = 1.3;
@@ -1090,32 +1490,7 @@
             guideCanvas.style.height = `${displayHeight}px`;
             wrapper.dataset.scale = displayScale.toString();
 
-            ctx.textBaseline = 'alphabetic';
             guideCtx.textBaseline = 'alphabetic';
-
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            if (rotate) {
-                ctx.save();
-                ctx.translate(canvasWidth / 2, canvasHeight / 2);
-                ctx.rotate(Math.PI);
-                ctx.translate(-canvasWidth / 2, -canvasHeight / 2);
-            }
-
-            ctx.fillStyle = textColor;
-            let x = paddingLeft;
-            const stable_alphabetic_baseline = paddingTop + maxRawAscent;
-
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const isCharChinese = isChinese(char);
-                const yOffset = isCharChinese ? effectiveChineseYOffset : effectiveEnglishYOffset;
-                const font = fontMode === 'dual' ? (isCharChinese ? chineseFont : englishFont) : singleFont;
-                ctx.font = `${fontSize}px ${font}`;
-                ctx.fillText(char, x, stable_alphabetic_baseline + yOffset);
-                x += ctx.measureText(char).width + letterSpacing;
-            }
-            if (rotate) ctx.restore();
-
             guideCtx.clearRect(0, 0, canvasWidth, canvasHeight);
             if (showGuides) {
                 guideCtx.lineWidth = 1;
@@ -1128,40 +1503,35 @@
                 };
 
                 if (hasNonChinese(text)) {
-                    const fontForEnglish = fontMode === 'dual' ? englishFont : singleFont;
+                    const fontForEnglish = fontMode === 'dual' ? document.getElementById('englishFont').value : document.getElementById('fontFamily').value;
                     guideCtx.font = `${fontSize}px ${fontForEnglish}`;
                     const metrics = guideCtx.measureText('gA');
                     const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
                     const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
-                    
                     const baseline = stable_alphabetic_baseline + effectiveEnglishYOffset;
                     const top = baseline - ascent;
                     const bottom = baseline + descent;
                     const middle = top + (ascent + descent) / 2;
-
                     [top, middle, bottom].forEach(y => drawLine(y, 'rgba(255, 0, 0, 0.5)'));
                 }
-                
+
                 if (hasChinese(text)) {
-                    const fontForChinese = fontMode === 'dual' ? chineseFont : singleFont;
+                    const fontForChinese = fontMode === 'dual' ? document.getElementById('chineseFont').value : document.getElementById('fontFamily').value;
                     guideCtx.font = `${fontSize}px ${fontForChinese}`;
                     const metrics = guideCtx.measureText('中');
                     const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.8;
                     const descent = metrics.actualBoundingBoxDescent || fontSize * 0.2;
-
                     const baseline = stable_alphabetic_baseline + effectiveChineseYOffset;
                     const top = baseline - ascent;
                     const bottom = baseline + descent;
                     const middle = top + (ascent + descent) / 2;
-
                     [top, middle, bottom].forEach(y => drawLine(y, 'rgba(0, 0, 255, 0.5)'));
                 }
             }
-            
+
             const mixInfo = isMixed ? " (混排修正開啟)" : " (單一語系-偏移停用)";
             document.getElementById('sizeInfo').textContent = `尺寸: ${Math.round(canvasWidth)} × ${Math.round(canvasHeight)} px | 模式: ${fontMode === 'dual' ? '中英分離' : '統一字體'} ${rotate ? '| 旋轉180°' : ''}${mixInfo}`;
 
-            // 文字 / 字體 / 顏色 / 旋轉等變更時，同步更新固定尺寸貼紙預覽
             if (typeof updateStickerPreview === 'function') updateStickerPreview();
         }
 
@@ -1303,17 +1673,23 @@
             });
         }
 
-        function buildFilename() {
-            const shippingNumber = document.getElementById('shippingNumberInput').value.trim();
-            const text = document.getElementById('textInput').value;
+        function buildFilenameFor(shippingNumber, text) {
             const date = new Date();
             const pad = (n, w = 2) => String(n).padStart(w, '0');
             const dateStr = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
             // 加上毫秒，避免使用者連點兩次時兩個 PNG 同名互相覆蓋 / 殘留
             const timeStr = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}${pad(date.getMilliseconds(), 3)}`;
-            const safeText = text.replace(/[^a-zA-Z0-9一-龥]/g, '_').substring(0, 15) || 'text';
-            const filenamePrefix = shippingNumber ? `${shippingNumber}_` : '';
+            const safeText = String(text).replace(/[^a-zA-Z0-9一-龥]/g, '_').substring(0, 15) || 'text';
+            const trimmedShip = (shippingNumber && String(shippingNumber).trim()) ? String(shippingNumber).trim() : '';
+            const filenamePrefix = trimmedShip ? `${trimmedShip}_` : '';
             return `${filenamePrefix}${safeText}_${dateStr}${timeStr}.png`;
+        }
+
+        function buildFilename() {
+            return buildFilenameFor(
+                document.getElementById('shippingNumberInput').value.trim(),
+                document.getElementById('textInput').value
+            );
         }
 
         // 從 Blob 而非 dataURL 觸發下載；dataURL 在大圖時可能失敗或被瀏覽器阻擋
