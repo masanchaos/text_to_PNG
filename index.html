@@ -449,7 +449,7 @@
                     <div style="overflow-x:auto;">
                         <table id="batchTable" style="width:100%; border-collapse:collapse; font-size:13px;">
                             <thead><tr style="text-align:left; border-bottom:1px solid #cbd5e1;">
-                                <th style="padding:6px;">✔</th><th style="padding:6px;">預覽（實際輸出縮圖）</th>
+                                <th style="padding:6px;"><label style="display:flex; align-items:center; gap:4px; cursor:pointer; font-weight:normal; white-space:nowrap;"><input type="checkbox" id="batchSelectAll" checked onchange="toggleSelectAllBatch(this.checked)">全選</label></th><th style="padding:6px;">預覽（實際輸出縮圖）</th>
                                 <th style="padding:6px;">出貨編號</th><th style="padding:6px;">刻字內容</th>
                                 <th style="padding:6px;">模板</th><th style="padding:6px;">備註</th>
                             </tr></thead>
@@ -1335,7 +1335,7 @@
 
                 const tdChk = document.createElement('td'); tdChk.style.padding = '6px';
                 const chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = m.enabled;
-                chk.onchange = () => { m.enabled = chk.checked; };
+                chk.onchange = () => { m.enabled = chk.checked; syncSelectAllState(); };
                 tdChk.appendChild(chk); tr.appendChild(tdChk);
 
                 const tdThumb = document.createElement('td'); tdThumb.style.padding = '6px';
@@ -1381,6 +1381,28 @@
                 body.appendChild(tr);
             });
             document.getElementById('batchPreviewWrap').style.display = 'block';
+            syncSelectAllState();
+        }
+
+        // 全選 / 全不選：表頭主勾選框控制所有列
+        function toggleSelectAllBatch(checked) {
+            batchModels.forEach((m, idx) => {
+                m.enabled = checked;
+                const tr = document.getElementById(`batchRow_${idx}`);
+                if (tr) { const cb = tr.children[0].querySelector('input'); if (cb) cb.checked = checked; }
+            });
+            const master = document.getElementById('batchSelectAll');
+            if (master) master.indeterminate = false;
+        }
+
+        // 依各列勾選狀態，更新表頭主勾選框（全勾=checked、全不勾=unchecked、部分=indeterminate）
+        function syncSelectAllState() {
+            const master = document.getElementById('batchSelectAll');
+            if (!master) return;
+            const total = batchModels.length;
+            const on = batchModels.filter(m => m.enabled).length;
+            master.checked = total > 0 && on === total;
+            master.indeterminate = on > 0 && on < total;
         }
 
         function refreshBatchRow(idx) {
