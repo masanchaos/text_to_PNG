@@ -461,7 +461,7 @@
                         <button class="btn btn-secondary" id="batchPrintStickerBtn" onclick="printSelectedStickers()" style="margin-left:8px;">🖨 列印勾選的貼紙</button>
                         <span id="batchProgress" style="margin-left:10px; font-size:12px; color:#666;"></span>
                     </div>
-                    <div class="info-box" style="margin-top:10px;">貼紙用上方「貼紙列印」區的尺寸／邊距設定，每列 1 張、勾選的列才會印。每列可按「✎ 微調」載入主編輯器調整後「套用回此列」。</div>
+                    <div class="info-box" style="margin-top:10px;">貼紙尺寸＝上方「貼紙列印」區的設定（按鈕上會顯示目前尺寸），每列 1 張、勾選的列才會印。每列可按「✎ 微調」載入主編輯器調整後「套用回此列」。<br><b>列印對話框請設「紙張＝標籤尺寸、邊界：無、縮放：100%／實際大小」，印出尺寸才會精準。</b></div>
                 </div>
             </div>
 
@@ -2164,6 +2164,15 @@
                     ? '請先輸入文字'
                     : `貼紙 ${r.wMM}×${r.hMM} mm ｜ ${r.canvasW}×${r.canvasH}px @${STICKER_DPI}DPI ｜ 字級≈${Math.round(r.fontPx)}px`;
             }
+            updateBatchStickerSizeHint();
+        }
+
+        // 批次列印鈕即時顯示「將以多大尺寸列印」（= 上方貼紙設定），讓使用者一眼確認一致
+        function updateBatchStickerSizeHint() {
+            const btn = document.getElementById('batchPrintStickerBtn');
+            if (!btn) return;
+            const d = getStickerDims();
+            btn.textContent = `🖨 列印勾選的貼紙（${d.wMM}×${d.hMM}mm）`;
         }
 
         // 透過隱藏 iframe 列印，@page 尺寸只作用在 iframe，不影響主頁面其他列印
