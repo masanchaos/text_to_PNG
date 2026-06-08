@@ -457,9 +457,11 @@
                         </table>
                     </div>
                     <div style="text-align:center; margin-top:14px;">
-                        <button class="btn btn-primary" id="batchGenerateBtn" onclick="generateAllBatch()">全部生成</button>
+                        <button class="btn btn-primary" id="batchGenerateBtn" onclick="generateAllBatch()">全部生成（文字 PNG）</button>
+                        <button class="btn btn-secondary" id="batchPrintStickerBtn" onclick="printSelectedStickers()" style="margin-left:8px;">🖨 列印勾選的貼紙</button>
                         <span id="batchProgress" style="margin-left:10px; font-size:12px; color:#666;"></span>
                     </div>
+                    <div class="info-box" style="margin-top:10px;">貼紙用上方「貼紙列印」區的尺寸／邊距設定，每列 1 張、勾選的列才會印。每列可按「✎ 微調」載入主編輯器調整後「套用回此列」。</div>
                 </div>
             </div>
 
@@ -485,6 +487,12 @@
                 <div class="info-box" style="margin-top: 14px;">列印對話框請設定「邊界：無」、「縮放：100% / 實際大小」，並選擇 40×30mm（或對應）標籤紙，印出的尺寸才會精準。</div>
             </div>
         </div>
+    </div>
+
+    <div id="fineTuneBar" style="display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:9999; align-items:center; gap:12px; background:#0f172a; color:#fff; padding:10px 16px; border-radius:10px; box-shadow:0 6px 24px rgba(15,23,42,0.35); font-size:14px; max-width:92vw;">
+        <span id="fineTuneBarLabel">微調中</span>
+        <button class="btn btn-primary" onclick="applyRowFineTune()" style="padding:6px 14px;">套用回此列</button>
+        <button class="btn btn-secondary" onclick="cancelRowFineTune()" style="padding:6px 14px; background:#475569; color:#fff; border-color:#475569;">取消</button>
     </div>
 
     <div id="toast" class="toast"><span class="toast-icon">✓</span><span id="toastMessage"></span></div>
@@ -1352,8 +1360,20 @@
                 const none = document.createElement('option'); none.value = ''; none.textContent = '（未選）'; sel.appendChild(none);
                 templates.forEach(t => { const o = document.createElement('option'); o.value = t.name; o.textContent = t.name; sel.appendChild(o); });
                 sel.value = m.templateName || '';
-                sel.onchange = () => { m.templateName = sel.value || null; m.templateLocked = true; refreshBatchRow(idx); };
-                tdTpl.appendChild(sel); tr.appendChild(tdTpl);
+                sel.onchange = () => { m.templateName = sel.value || null; m.templateLocked = true; m.override = null; refreshBatchRow(idx); };
+                tdTpl.appendChild(sel);
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-secondary';
+                editBtn.textContent = '✎ 微調';
+                editBtn.style.cssText = 'display:block; margin-top:6px; padding:4px 10px; font-size:12px;';
+                editBtn.onclick = () => startRowFineTune(idx);
+                tdTpl.appendChild(editBtn);
+                const badge = document.createElement('span');
+                badge.id = `batchBadge_${idx}`;
+                badge.style.cssText = 'display:block; margin-top:4px; font-size:11px; color:#2563eb;';
+                badge.textContent = m.override ? '✎ 已微調' : '';
+                tdTpl.appendChild(badge);
+                tr.appendChild(tdTpl);
 
                 const tdNote = document.createElement('td'); tdNote.style.padding = '6px';
                 tdNote.textContent = m.note || ''; tr.appendChild(tdNote);
@@ -1367,22 +1387,111 @@
             const m = batchModels[idx];
             const tr = document.getElementById(`batchRow_${idx}`);
             if (!tr) return;
-            tr.style.background = m.templateName ? '' : 'rgba(220,38,38,0.08)';
+            tr.style.background = (m.templateName || m.override) ? '' : 'rgba(220,38,38,0.08)';
             const picker = document.getElementById('textColor').value;
             const tdThumb = tr.children[1];
             tdThumb.innerHTML = '';
             tdThumb.appendChild(renderBatchRowThumb(m, picker));
             const sel = tr.children[4].querySelector('select');
             if (sel && sel.value !== (m.templateName || '')) sel.value = m.templateName || '';
+            const badge = document.getElementById(`batchBadge_${idx}`);
+            if (badge) badge.textContent = m.override ? '✎ 已微調' : '';
+        }
+
+        // 取得某列的繪圖參數（單一入口）：有微調覆寫就用覆寫，否則用模板
+        function rowParams(m, picker) {
+            if (m.override) return { ...m.override, text: m.text };
+            if (!m.templateName) return null;
+            const t = templates.find(x => x.name === m.templateName);
+            if (!t) return null;
+            return templateToRenderParams(t, m.text, picker);
+        }
+
+        // --- 批次：逐列微調（沿用主編輯器）---
+        let batchEditingIndex = null;
+
+        function captureManualParams() {
+            return {
+                text: document.getElementById('textInput').value,
+                fontMode: fontMode,
+                singleFont: document.getElementById('fontFamily').value,
+                englishFont: document.getElementById('englishFont').value,
+                chineseFont: document.getElementById('chineseFont').value,
+                fontSize: document.getElementById('fontSize').value,
+                letterSpacing: document.getElementById('letterSpacing').value,
+                textColor: document.getElementById('textColor').value,
+                paddingTop: document.getElementById('paddingTop').value,
+                paddingBottom: document.getElementById('paddingBottom').value,
+                paddingLeft: document.getElementById('paddingLeft').value,
+                paddingRight: document.getElementById('paddingRight').value,
+                rotate: document.getElementById('rotate180').checked,
+                chineseYOffset: document.getElementById('chineseYOffset').value,
+                englishYOffset: document.getElementById('englishYOffset').value
+            };
+        }
+
+        function loadParamsIntoEditor(p) {
+            document.getElementById('textInput').value = p.text || '';
+            document.getElementById('fontSize').value = p.fontSize;
+            document.getElementById('letterSpacing').value = p.letterSpacing;
+            document.getElementById('textColor').value = p.textColor || '#000000';
+            document.getElementById('paddingTop').value = p.paddingTop;
+            document.getElementById('paddingBottom').value = p.paddingBottom;
+            document.getElementById('paddingLeft').value = p.paddingLeft;
+            document.getElementById('paddingRight').value = p.paddingRight;
+            document.getElementById('rotate180').checked = !!p.rotate;
+            document.getElementById('chineseYOffset').value = p.chineseYOffset != null ? p.chineseYOffset : 0;
+            document.getElementById('englishYOffset').value = p.englishYOffset != null ? p.englishYOffset : 0;
+            const mode = p.fontMode || 'single';
+            document.querySelectorAll('.font-mode-btn')[mode === 'dual' ? 1 : 0].click();
+            if (mode === 'dual') {
+                document.getElementById('englishFont').value = p.englishFont || "'Avenir Next Condensed', sans-serif";
+                document.getElementById('chineseFont').value = p.chineseFont || "'Noto Sans CJK TC', sans-serif";
+            } else {
+                document.getElementById('fontFamily').value = p.singleFont || "'Noto Sans CJK TC', sans-serif";
+            }
+            updatePaddingLabels();
+            checkCharCount();
+            updateCanvas();
+        }
+
+        function startRowFineTune(idx) {
+            const m = batchModels[idx];
+            const picker = document.getElementById('textColor').value;
+            const p = rowParams(m, picker);
+            if (!p) { showToast('此列尚未有模板，請先選模板再微調', 3500, 'warning'); return; }
+            batchEditingIndex = idx;
+            loadParamsIntoEditor(p);
+            document.getElementById('fineTuneBarLabel').textContent = `微調中：第 ${idx + 1} 列　${m.shipping || ''}　「${m.text || ''}」`;
+            document.getElementById('fineTuneBar').style.display = 'flex';
+            document.getElementById('textInput').scrollIntoView({ block: 'center' });
+        }
+
+        function applyRowFineTune() {
+            if (batchEditingIndex === null) return;
+            const idx = batchEditingIndex;
+            const m = batchModels[idx];
+            m.override = captureManualParams();
+            m.text = m.override.text;
+            document.getElementById('fineTuneBar').style.display = 'none';
+            batchEditingIndex = null;
+            refreshBatchRow(idx);
+            const tr = document.getElementById(`batchRow_${idx}`);
+            if (tr) { const inp = tr.children[3].querySelector('input'); if (inp) inp.value = m.text; }
+            showToast(`已套用微調到第 ${idx + 1} 列`, 2500, 'success');
+        }
+
+        function cancelRowFineTune() {
+            document.getElementById('fineTuneBar').style.display = 'none';
+            batchEditingIndex = null;
         }
 
         // 縮圖 = 實際輸出 canvas（CSS 縮小顯示），所見即所得
         function renderBatchRowThumb(m, picker) {
             const warn = (msg) => { const s = document.createElement('span'); s.textContent = msg; s.style.color = '#dc2626'; return s; };
-            if (!m.templateName) return warn('⚠ 未選模板');
-            const t = templates.find(x => x.name === m.templateName);
-            if (!t) return warn('⚠ 模板不存在');
-            const { canvas } = renderTextToCanvas({ ...templateToRenderParams(t, m.text, picker), fitInk: true });
+            const p = rowParams(m, picker);
+            if (!p) return warn('⚠ 未選模板');
+            const { canvas } = renderTextToCanvas({ ...p, fitInk: true });
             const MAXW = 220, MAXH = 64;
             const scale = Math.min(1, MAXW / canvas.width, MAXH / canvas.height);
             canvas.style.width = `${Math.round(canvas.width * scale)}px`;
@@ -1440,15 +1549,15 @@
         let isBatchRunning = false;
         async function generateAllBatch() {
             if (isBatchRunning) return;
-            const targets = batchModels.filter(m => m.enabled && m.templateName);
-            const skipped = batchModels.filter(m => m.enabled && !m.templateName).length;
+            const picker = document.getElementById('textColor').value;
+            const targets = batchModels.filter(m => m.enabled && rowParams(m, picker));
+            const skipped = batchModels.filter(m => m.enabled && !rowParams(m, picker)).length;
             if (!targets.length) { showToast('沒有可生成的列（請先選模板）', 3500, 'warning'); return; }
 
             isBatchRunning = true;
             const btn = document.getElementById('batchGenerateBtn');
             const prog = document.getElementById('batchProgress');
             btn.disabled = true;
-            const picker = document.getElementById('textColor').value;
             await document.fonts.ready;
 
             try {
@@ -1456,8 +1565,7 @@
                 for (let i = 0; i < targets.length; i++) {
                     const m = targets[i];
                     prog.textContent = `繪製中 ${i + 1}/${targets.length}…`;
-                    const t = templates.find(x => x.name === m.templateName);
-                    const { canvas } = renderTextToCanvas({ ...templateToRenderParams(t, m.text, picker), fitInk: true });
+                    const { canvas } = renderTextToCanvas({ ...rowParams(m, picker), fitInk: true });
                     const blob = await canvasToBlobSafe(canvas);
                     items.push({ filename: buildFilenameFor(m.shipping, m.text), blob });
                 }
@@ -1916,9 +2024,13 @@
         }
 
         // 產生實際尺寸貼紙畫布；withGuide=true 時額外畫出安全邊距虛線框（僅供畫面預覽）
+        // 手動貼紙：沿用主編輯器目前設定
         function buildStickerCanvas(withGuide) {
-            const d = getStickerDims();
-            const s = getCurrentTextSettings();
+            return buildStickerCanvasFrom(getCurrentTextSettings(), getStickerDims(), withGuide);
+        }
+
+        // 參數化貼紙繪圖：settings 可來自手動(getCurrentTextSettings)或批次某列(rowParams)
+        function buildStickerCanvasFrom(s, d, withGuide) {
             const canvas = document.createElement('canvas');
             canvas.width = d.canvasW;
             canvas.height = d.canvasH;
@@ -1927,18 +2039,24 @@
             const availW = Math.max(1, d.canvasW - d.marginPx * 2);
             const availH = Math.max(1, d.canvasH - d.marginPx * 2);
 
+            const fontSizeNum = parseFloat(s.fontSize) || 100;
+            const letterSpacingNum = parseInt(s.letterSpacing, 10) || 0;
+            const chYOff = parseFloat(s.chineseYOffset) || 0;
+            const enYOff = parseFloat(s.englishYOffset) || 0;
+
             const result = {
                 canvas, canvasW: d.canvasW, canvasH: d.canvasH,
                 wMM: d.wMM, hMM: d.hMM, marginPx: d.marginPx, empty: true, fontPx: 0
             };
 
-            const text = s.text;
+            const text = s.text || '';
             if (text && text.trim().length > 0) {
-                // 以目前字級為基準量測，再依貼紙可用區等比縮放（字距 / Y 偏移一起縮放，維持相對外觀）
-                const refSize = s.fontSize > 0 ? s.fontSize : 100;
+                const refSize = fontSizeNum > 0 ? fontSizeNum : 100;
                 const measureCtx = document.createElement('canvas').getContext('2d');
-                let coreWidth = 0, maxAscent = 0, maxDescent = 0;
+                let maxAscent = 0, maxDescent = 0;
                 const glyphs = [];
+                // 以「實際墨水範圍」量寬（含斜體外凸），避免草寫在標籤邊緣被切
+                let penX = 0, inkMin = Infinity, inkMax = -Infinity;
                 for (let i = 0; i < text.length; i++) {
                     const char = text[i];
                     const isCh = isChinese(char);
@@ -1947,18 +2065,23 @@
                     const m = measureCtx.measureText(char);
                     maxAscent = Math.max(maxAscent, m.actualBoundingBoxAscent || refSize * 0.8);
                     maxDescent = Math.max(maxDescent, m.actualBoundingBoxDescent || refSize * 0.2);
+                    const abbL = (typeof m.actualBoundingBoxLeft === 'number') ? m.actualBoundingBoxLeft : 0;
+                    const abbR = (typeof m.actualBoundingBoxRight === 'number') ? m.actualBoundingBoxRight : m.width;
+                    inkMin = Math.min(inkMin, penX - abbL);
+                    inkMax = Math.max(inkMax, penX + abbR);
                     glyphs.push({ char, isCh, font, w: m.width });
-                    coreWidth += m.width;
+                    penX += m.width + letterSpacingNum;
                 }
-                if (text.length > 1) coreWidth += s.letterSpacing * (text.length - 1);
+                if (!isFinite(inkMin) || !isFinite(inkMax)) { inkMin = 0; inkMax = 1; }
+                const inkW = Math.max(1, inkMax - inkMin);
                 const coreHeight = maxAscent + maxDescent;
 
-                let scale = Math.min(availW / coreWidth, availH / coreHeight);
+                let scale = Math.min(availW / inkW, availH / coreHeight);
                 if (!isFinite(scale) || scale <= 0) scale = 1;
 
-                const totalWidth = coreWidth * scale;
                 const blockHeight = coreHeight * scale;
-                let x = d.marginPx + (availW - totalWidth) / 2;
+                // 置中：讓墨水左緣對齊可用區左側
+                const drawStartX = d.marginPx + (availW - inkW * scale) / 2 - inkMin * scale;
                 const baseline = d.marginPx + (availH - blockHeight) / 2 + maxAscent * scale;
 
                 if (s.rotate) {
@@ -1967,14 +2090,15 @@
                     ctx.rotate(Math.PI);
                     ctx.translate(-d.canvasW / 2, -d.canvasH / 2);
                 }
-                ctx.fillStyle = s.textColor;
+                ctx.fillStyle = s.textColor || '#000000';
                 ctx.textBaseline = 'alphabetic';
+                let x = drawStartX;
                 for (let i = 0; i < glyphs.length; i++) {
                     const g = glyphs[i];
-                    const yOff = (g.isCh ? s.chineseYOffset : s.englishYOffset) * scale;
+                    const yOff = (g.isCh ? chYOff : enYOff) * scale;
                     ctx.font = `${refSize * scale}px ${g.font}`;
                     ctx.fillText(g.char, x, baseline + yOff);
-                    x += g.w * scale + s.letterSpacing * scale;
+                    x += g.w * scale + letterSpacingNum * scale;
                 }
                 if (s.rotate) ctx.restore();
 
@@ -2021,23 +2145,14 @@
         }
 
         // 透過隱藏 iframe 列印，@page 尺寸只作用在 iframe，不影響主頁面其他列印
-        function printSticker() {
-            const text = document.getElementById('textInput').value;
-            if (!text || !text.trim()) { showToast('請先輸入文字再列印貼紙', 3000, 'error'); return; }
-
-            const r = buildStickerCanvas(false);
-            const dataUrl = r.canvas.toDataURL('image/png');
-            const copies = clampNum(parseInt(document.getElementById('stickerCopies').value, 10), 1, 200) || 1;
-
-            let pages = '';
-            for (let i = 0; i < copies; i++) pages += `<img src="${dataUrl}" alt="sticker">`;
-
+        // 共用：把多張貼紙 <img> 組成一份、透過隱藏 iframe 列印（@page 只作用於 iframe）
+        function printStickerSheet(imgsHtml, wMM, hMM, sentMsg) {
             const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>列印貼紙</title><style>`
-                + `@page { size: ${r.wMM}mm ${r.hMM}mm; margin: 0; }`
+                + `@page { size: ${wMM}mm ${hMM}mm; margin: 0; }`
                 + `html, body { margin: 0; padding: 0; }`
-                + `img { width: ${r.wMM}mm; height: ${r.hMM}mm; display: block; page-break-after: always; }`
+                + `img { width: ${wMM}mm; height: ${hMM}mm; display: block; page-break-after: always; }`
                 + `img:last-child { page-break-after: auto; }`
-                + `</style></head><body>${pages}</body></html>`;
+                + `</style></head><body>${imgsHtml}</body></html>`;
 
             const iframe = document.createElement('iframe');
             iframe.setAttribute('aria-hidden', 'true');
@@ -2053,13 +2168,12 @@
                     win.focus();
                     win.onafterprint = cleanup;
                     win.print();
-                    showToast(`已送出列印：${r.wMM}×${r.hMM}mm × ${copies} 張`);
+                    showToast(sentMsg);
                 } catch (e) {
                     console.error('print failed:', e);
                     showToast('列印失敗：' + (e.message || e), 4000, 'error');
                 }
-                // 後備清理：若 afterprint 未觸發，60 秒後移除 iframe
-                setTimeout(cleanup, 60000);
+                setTimeout(cleanup, 60000); // 後備清理：若 afterprint 未觸發，60 秒後移除 iframe
             };
 
             const doc = iframe.contentWindow.document;
@@ -2067,13 +2181,40 @@
             doc.write(html);
             doc.close();
 
-            const img = doc.querySelector('img');
-            if (img && !img.complete) {
-                img.onload = doPrint;
-                img.onerror = doPrint;
-            } else {
+            const imgs = Array.from(doc.querySelectorAll('img'));
+            const pending = imgs.filter(im => !im.complete);
+            if (pending.length === 0) {
                 setTimeout(doPrint, 60);
+            } else {
+                let left = pending.length;
+                const done = () => { if (--left <= 0) doPrint(); };
+                pending.forEach(im => { im.onload = done; im.onerror = done; });
             }
+        }
+
+        function printSticker() {
+            const text = document.getElementById('textInput').value;
+            if (!text || !text.trim()) { showToast('請先輸入文字再列印貼紙', 3000, 'error'); return; }
+            const r = buildStickerCanvas(false);
+            const dataUrl = r.canvas.toDataURL('image/png');
+            const copies = clampNum(parseInt(document.getElementById('stickerCopies').value, 10), 1, 200) || 1;
+            let pages = '';
+            for (let i = 0; i < copies; i++) pages += `<img src="${dataUrl}" alt="sticker">`;
+            printStickerSheet(pages, r.wMM, r.hMM, `已送出列印：${r.wMM}×${r.hMM}mm × ${copies} 張`);
+        }
+
+        // 批次：列印勾選的列（每列 1 張，用該列模板/微調覆寫 + 上方貼紙尺寸）
+        function printSelectedStickers() {
+            const picker = document.getElementById('textColor').value;
+            const targets = batchModels.filter(m => m.enabled && rowParams(m, picker));
+            if (!targets.length) { showToast('沒有勾選可列印的列（請先勾選並確認有模板）', 3500, 'warning'); return; }
+            const d = getStickerDims();
+            let pages = '';
+            for (const m of targets) {
+                const r = buildStickerCanvasFrom(rowParams(m, picker), d, false);
+                pages += `<img src="${r.canvas.toDataURL('image/png')}" alt="sticker">`;
+            }
+            printStickerSheet(pages, d.wMM, d.hMM, `已送出列印：${targets.length} 張貼紙（${d.wMM}×${d.hMM}mm）`);
         }
 
         // 將 blob 存到使用者選定資料夾（若有），否則用瀏覽器預設下載
