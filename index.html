@@ -1584,12 +1584,17 @@
 
             try {
                 const items = [];
+                const usedNames = new Map(); // 同批同名（同出貨編號+代數+文字）時補 _2、_3，避免互相覆蓋
                 for (let i = 0; i < targets.length; i++) {
                     const m = targets[i];
                     prog.textContent = `繪製中 ${i + 1}/${targets.length}…`;
                     const { canvas } = renderTextToCanvas({ ...rowParams(m, picker), fitInk: true });
                     const blob = await canvasToBlobSafe(canvas);
-                    items.push({ filename: buildFilenameFor(m.shipping, m.text), blob });
+                    let filename = buildFilenameFor(m.shipping, m.templateName, m.text);
+                    const seen = usedNames.get(filename) || 0;
+                    usedNames.set(filename, seen + 1);
+                    if (seen) filename = filename.replace(/\.png$/, `_${seen + 1}.png`);
+                    items.push({ filename, blob });
                 }
 
                 let folderHandle = null;
@@ -1875,21 +1880,19 @@
             });
         }
 
-        function buildFilenameFor(shippingNumber, text) {
-            const date = new Date();
-            const pad = (n, w = 2) => String(n).padStart(w, '0');
-            const dateStr = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
-            // 加上毫秒，避免使用者連點兩次時兩個 PNG 同名互相覆蓋 / 殘留
-            const timeStr = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}${pad(date.getMilliseconds(), 3)}`;
+        // 檔名 = 出貨編號_第幾代_輸入文字.png；代數取自模板名稱（一代/二代/三代），缺哪段就略過哪段
+        function buildFilenameFor(shippingNumber, templateName, text) {
             const safeText = String(text).replace(/[^a-zA-Z0-9一-龥]/g, '_').substring(0, 15) || 'text';
             const trimmedShip = (shippingNumber && String(shippingNumber).trim()) ? String(shippingNumber).trim() : '';
-            const filenamePrefix = trimmedShip ? `${trimmedShip}_` : '';
-            return `${filenamePrefix}${safeText}_${dateStr}${timeStr}.png`;
+            const genMatch = String(templateName || '').match(/[一二三四五六七八九十]+代/);
+            const gen = genMatch ? genMatch[0] : '';
+            return [trimmedShip, gen, safeText].filter(Boolean).join('_') + '.png';
         }
 
         function buildFilename() {
             return buildFilenameFor(
                 document.getElementById('shippingNumberInput').value.trim(),
+                currentTemplateName,
                 document.getElementById('textInput').value
             );
         }
